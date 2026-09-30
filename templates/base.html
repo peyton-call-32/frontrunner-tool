@@ -48,27 +48,22 @@
       color: var(--text); text-decoration: none; }
     .card + .card { border-top: 0; }
     form.card { border: 0; padding: 0; }
-    .card.collapsed { display: flex; justify-content: space-between; align-items: center; }
-    .card.collapsed .muted { color: var(--faint); }
     a.card.now { cursor: pointer; }
     /* Trip name on home page cards: bigger, dark, normal case so it reads at a glance */
     a.card.now .top .label { font-size: 18px; font-weight: 600; color: var(--text); }
-    a.card.collapsed .name { font-size: 18px; font-weight: 600; }
     /* My trips: each saved trip in its own light box */
     .card.box { border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
     .card.box + .card.box { border-top: 1px solid var(--line); }
     .route { font-size: 14px; color: var(--muted); margin: 4px 0 0; }
 
-    /* The answer: leave → arrive, big, each with a small label above */
+    /* The answer: leave → arrive, big */
     .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
     .top .label { margin: 0; }
-    .times { display: flex; align-items: flex-end; gap: 10px; }
-    .times > div { min-width: 0; }
-    .times .tl { font-size: 14px; font-weight: 400; color: var(--muted); margin: 0 0 2px; line-height: 1.3; }
+    .times { display: flex; align-items: center; gap: 10px; }
     .times .big { font-size: 32px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; margin: 0;
       font-variant-numeric: tabular-nums; white-space: nowrap; }
     .times .ampm { font-size: 16px; font-weight: 700; margin-left: 2px; }
-    .times .arrow { color: var(--faint); font-size: 22px; line-height: 1.4; }
+    .times .arrow { color: var(--faint); font-size: 22px; }
     .sentence { font-size: 18px; line-height: 1.4; margin: 0; }
     /* Countdown: accent normally, warning color when it's close */
     .pill { flex: none; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums;
@@ -84,22 +79,31 @@
     /* Tight transfer */
     .tight-note { color: var(--tight); font-weight: 700; font-size: 15px; margin: 14px 0 0; }
 
-    /* Route timeline: one row per ride or transfer, joined by a thin vertical line */
-    .timeline { list-style: none; padding: 0; margin: 20px 0 0; font-size: 15px; }
-    .timeline li { position: relative; display: flex; gap: 12px; align-items: flex-start; padding-bottom: 14px; }
-    .timeline li:not(:last-child)::before { content: ""; position: absolute; left: 13px; top: 28px; bottom: 0;
-      width: 2px; background: var(--line); }
-    .timeline .icon { flex: none; width: 28px; height: 28px; display: grid; place-items: center; color: var(--accent); }
-    .timeline .icon svg { width: 18px; height: 18px; fill: currentColor; }
-    .timeline li > span:last-child { padding-top: 3px; font-variant-numeric: tabular-nums; }
-    .timeline b { font-weight: 500; }
-    .timeline .nb { white-space: nowrap; }
-    .timeline .toward { color: var(--muted); }
-    .timeline li.transfer { color: var(--muted); }
-    .timeline li.transfer .icon { color: var(--muted); }
-    .timeline li.tight > span:last-child { color: var(--tight); font-weight: 500; }
-    .timeline li.tight .icon { color: var(--tight); }
-    .total { font-size: 14px; color: var(--muted); margin: 0; }
+    /* Route: a line of stops. Time on the left, a dot on a connecting line, station on the right */
+    .stops { list-style: none; padding: 0; margin: 20px 0 0; font-size: 15px; }
+    .stops li { position: relative; display: grid; grid-template-columns: 44px 12px 1fr; column-gap: 12px;
+      padding-bottom: 18px; }
+    .stops li:last-child { padding-bottom: 0; }
+    .stops li:not(:last-child)::before { content: ""; position: absolute; left: 61px; top: 12px; bottom: -6px;
+      width: 2px; background: var(--accent); opacity: .35; }
+    .stops .t { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.5; }
+    .stops .dot { position: relative; width: 12px; height: 12px; margin-top: 5px; border-radius: 50%;
+      border: 2px solid var(--accent); background: var(--bg); }
+    .stops li:first-child .dot, .stops li:last-child .dot { background: var(--accent); }
+    .stops p { margin: 0; line-height: 1.5; }
+    .stops .stop { font-weight: 600; }
+    .stops .ride { color: var(--muted); font-size: 14px; }
+    .stops .ride.tight { color: var(--tight); font-weight: 600; }
+    .total { font-size: 14px; color: var(--muted); margin: 4px 0 0; }
+
+    /* Other times today: small side-by-side buttons */
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip { font: inherit; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; padding: 6px 12px;
+      border: 1px solid var(--field-line); border-radius: 4px; background: transparent; color: var(--text); cursor: pointer; }
+    .chip[aria-expanded="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+    .chip-route { padding: 4px 0 8px; }
+    .show-all { font: inherit; font-size: 15px; font-weight: 500; color: var(--accent); background: none; border: 0;
+      padding: 10px 0 0; cursor: pointer; }
 
     /* One-line options, tap to expand */
     details.line { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: 16px; }
@@ -115,7 +119,7 @@
     details.earlier > summary { color: var(--muted); font-size: 15px; margin: 32px 0 12px; }
 
     /* Arrive-by, deliberately small */
-    details.arrive { font-size: 15px; margin: 4px 0 0; }
+    details.arrive { font-size: 15px; margin: 32px 0 0; }
     details.arrive > summary { color: var(--accent); font-weight: 500; font-size: 15px; padding: 6px 0; }
     details.arrive form { margin: 8px 0 12px; }
     details.arrive p { margin-top: 8px; }
@@ -164,7 +168,7 @@
       document.querySelectorAll(".pill[data-t]").forEach(el => {
         const left = Number(el.dataset.t) - now;
         if (el.hasAttribute("data-watch") && left < RUSH) return reload();
-        el.textContent = left < 0 ? "left" : words(left);
+        el.textContent = el.dataset.what + " " + (left < 0 ? "left" : words(left));
         el.classList.toggle("soon", left >= 0 && left <= SOON);
       });
       document.querySelectorAll("[data-rush]").forEach(el => {

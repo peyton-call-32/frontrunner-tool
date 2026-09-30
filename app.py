@@ -50,21 +50,9 @@ def at(day, gtfs_time):
 PROVO = short(TRANSFER)  # "Provo Central"
 
 
-def toward(headsign):
-    """"To Provo" -> "Provo", "Orem Central Station" -> "Orem Central": the way riders name a direction."""
-    return short(headsign.removeprefix("To "))
-
-
-def ride(mode, board_at, board, alight_at, alight, headsign):
-    """One ride on the timeline, e.g. FrontRunner, Murray Central 10:16 → Provo Central 11:11."""
-    where = toward(headsign)
-    if where.startswith("East Bay"):
-        where = "East Bay loop"
-    elif alight_at.startswith(where):
-        where = None  # the ride ends where it's headed, so "toward" adds nothing
-    else:
-        where = f"toward {where}"
-    return dict(mode=mode, name="FrontRunner" if mode == "train" else "UVX", toward=where,
+def ride(mode, board_at, board, alight_at, alight):
+    """One ride on the route, e.g. FrontRunner, Murray Central 10:16 → Provo Central 11:11."""
+    return dict(mode=mode, name="FrontRunner" if mode == "train" else "UVX bus",
                 start=board_at, time=fmt(board), end=alight_at, arrive=fmt(alight))
 
 
@@ -79,8 +67,8 @@ def to_campus_option(trip, day, train, bus):
     return dict(
         leave=at(day, train[0]), time=fmt(train[0]), vehicle="train", start=home,
         dest=campus, arrive=fmt(bus[1]), total=mins(train[0], bus[1]), transfer=transfer,
-        legs=[ride("train", home, train[0], PROVO, train[1], train[2]), transfer_leg(transfer),
-              ride("bus", PROVO, bus[0], campus, bus[1], bus[2])],
+        legs=[ride("train", home, train[0], PROVO, train[1]), transfer_leg(transfer),
+              ride("bus", PROVO, bus[0], campus, bus[1])],
     )
 
 
@@ -91,8 +79,8 @@ def home_option(trip, day, bus, train):
     return dict(
         leave=at(day, bus[0]), time=fmt(bus[0]), vehicle="UVX", start=campus,
         dest=home, arrive=fmt(train[1]), total=mins(bus[0], train[1]), transfer=transfer,
-        legs=[ride("bus", campus, bus[0], PROVO, bus[1], bus[2]), transfer_leg(transfer),
-              ride("train", PROVO, train[0], home, train[1], train[2])],
+        legs=[ride("bus", campus, bus[0], PROVO, bus[1]), transfer_leg(transfer),
+              ride("train", PROVO, train[0], home, train[1])],
     )
 
 
@@ -104,8 +92,7 @@ def journey_option(journey, day):
         mode = "train" if leg["mode"] == TRAIN else "bus"
         if i:
             legs.append(transfer_leg(mins(journey[i - 1]["alight"], leg["board"])))
-        legs.append(ride(mode, short(leg["board_at"]), leg["board"], short(leg["alight_at"]), leg["alight"],
-                         leg["headsign"]))
+        legs.append(ride(mode, short(leg["board_at"]), leg["board"], short(leg["alight_at"]), leg["alight"]))
     return dict(
         leave=at(day, first["board"]), arrive_at=at(day, last["alight"]), time=fmt(first["board"]),
         vehicle="train" if first["mode"] == TRAIN else "UVX", start=short(first["board_at"]),
@@ -207,7 +194,7 @@ def home():
     now = datetime.now()
     now_kind = part_of_day(now)
     trips = sorted(TripStore(USER).all(), key=lambda t: t.direction != now_kind)
-    cards = [dict(trip=t, view=trip_view(t, now) if t.direction == now_kind else None) for t in trips]
+    cards = [dict(trip=t, view=trip_view(t, now)) for t in trips]
     return render_template("index.html", cards=cards, saved=request.args.get("saved"))
 
 

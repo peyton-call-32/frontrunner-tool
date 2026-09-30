@@ -1,10 +1,11 @@
 {# How one way to make a trip is written. `r` comes from app.to_campus_option / app.home_option / app.journey_option. #}
 
-{# Countdown pill, e.g. "leaves in 6 min". The page script keeps it current.
+{# Countdown pill, e.g. "Train leaves in 6 min" ("Bus ..." when the trip starts on UVX). The page script keeps it current.
    watch: reload when this option enters "you may not make it" range, so the page can offer a backup. #}
 {% macro pill(r, watch=false) -%}
-  <span class="pill {{ 'soon' if soon(r.leave) }}" data-t="{{ epoch_ms(r.leave) }}"
-    {%- if watch %} data-watch{% endif %}>{{ countdown(r.leave) }}</span>
+  {%- set what = "Train" if r.vehicle == "train" else "Bus" -%}
+  <span class="pill {{ 'soon' if soon(r.leave) }}" data-t="{{ epoch_ms(r.leave) }}" data-what="{{ what }}"
+    {%- if watch %} data-watch{% endif %}>{{ what }} {{ countdown(r.leave) }}</span>
 {%- endmacro %}
 
 {# "Catch the 8:46 AM train at Murray Central. You'll get to BYU South Campus at 10:06 AM." #}
@@ -13,32 +14,36 @@
   You'll get to {{ r.dest }} at <strong>{{ r.arrive }}</strong>.
 {%- endmacro %}
 
-{% set ICONS = {
-  "train": "M12 2c-4 0-8 .5-8 4v9.5C4 17.43 5.57 19 7.5 19L6 20.5v.5h2.23l2-2H14l2 2h2v-.5L16.5 19c1.93 0 3.5-1.57 3.5-3.5V6c0-3.5-3.58-4-8-4zM7.5 17c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm3.5-7H6V6h5v4zm2 0V6h5v4h-5zm3.5 7c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z",
-  "bus": "M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z",
-  "transfer": "M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z",
-} %}
-
 {# "10:16 AM" -> "10:16"; the big times at the top already say AM/PM #}
 {% macro clock(t) %}{{ t.split(" ")[0] }}{% endmacro %}
 
-{# The route, top to bottom: train, transfer, bus, joined by a thin line #}
-{% macro timeline(r) %}
-<ol class="timeline">
-  {% for l in r.legs %}
-    {% set tight = l.mode == "transfer" and l.minutes <= TIGHT %}
-    <li class="{{ l.mode }} {{ 'tight' if tight }}">
-      <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="{{ ICONS[l.mode] }}"/></svg></span>
-      {% if l.mode == "transfer" %}
-        <span>{% if tight %}Only {% endif %}{{ l.minutes }} min to transfer</span>
-      {% else %}
-        <span><b>{{ l.name }}</b>{% if l.toward %} <span class="toward">{{ l.toward }}</span>{% endif %},
-          <span class="nb">{{ l.start }} {{ clock(l.time) }}</span> → <span class="nb">{{ l.end }} {{ clock(l.arrive) }}</span></span>
-      {% endif %}
+{# The route as a line of stops, each named once: time, dot, station, and what to ride from there.
+   Murray Central 10:16 (FrontRunner) · Provo Central 11:11 (Transfer to UVX bus at 11:17) · BYU South Campus 11:34 #}
+{% macro stops(r) %}
+{% set rides = r.legs|rejectattr("mode", "eq", "transfer")|list %}
+<ol class="stops">
+  {% for l in rides %}
+    {% set i = loop.index0 %}
+    <li>
+      <span class="t">{{ clock(rides[i - 1].arrive if i else l.time) }}</span>
+      <span class="dot"></span>
+      <div>
+        <p class="stop">{{ l.start }}</p>
+        {% if i %}
+          {% set m = r.legs[i * 2 - 1].minutes %}
+          <p class="ride {{ 'tight' if m <= TIGHT }}">Transfer to {{ l.name }} at {{ clock(l.time) }} ({% if m <= TIGHT %}only {% endif %}{{ m }} min)</p>
+        {% else %}
+          <p class="ride">{{ l.name }}</p>
+        {% endif %}
+      </div>
     </li>
   {% endfor %}
+  <li>
+    <span class="t">{{ clock(r.arrive) }}</span>
+    <span class="dot"></span>
+    <div><p class="stop">{{ r.dest }}</p></div>
+  </li>
 </ol>
-<p class="total">{{ duration(r.total) }} total</p>
 {% endmacro %}
 
 {# "8:46 AM" -> 8:46 with a small AM, so the digits carry the weight #}
@@ -46,15 +51,15 @@
   {%- set p = t.split(" ", 1) -%}{{ p[0] }}<span class="ampm">{{ p[1] }}</span>
 {%- endmacro %}
 
-{# Leave Murray Central     Arrive BYU South Campus
-   10:16 AM             →  11:34 AM #}
-{% macro times(r, route=none) -%}
+{# 10:16 AM → 11:34 AM, with the total trip time under them #}
+{% macro times(r, total=true, route=none) -%}
   <div class="times">
-    <div><p class="tl">Leave {{ r.start }}</p><p class="big">{{ hm(r.time) }}</p></div>
+    <p class="big">{{ hm(r.time) }}</p>
     <span class="arrow">→</span>
-    <div><p class="tl">Arrive {{ r.dest }}</p><p class="big">{{ hm(r.arrive) }}</p></div>
+    <p class="big">{{ hm(r.arrive) }}</p>
   </div>
   {% if route %}<p class="route">{{ route }}</p>{% endif %}
+  {% if total %}<p class="total">{{ duration(r.total) }} total</p>{% endif %}
 {%- endmacro %}
 
 {# Small row above the times: a title on the left (trip name, "Tomorrow"...), the countdown on the right #}
@@ -73,19 +78,19 @@
 {% set lead = lead or ("Tomorrow, catch" if tomorrow else "Catch") %}
 {% set day = lead[:-7] if lead != "Catch" else none %}
 {{ top([title, day]|select|join(" · "), none if tomorrow else r, watch) }}
-{{ times(r, route=route) }}
-{% if with_steps %}{{ timeline(r) }}{% endif %}
+{{ times(r, total=with_steps, route=route) }}
+{% if with_steps %}{{ stops(r) }}{% endif %}
 {% endmacro %}
 
 {# Main answer that leaves too soon to count on: warning, then the backup right below. #}
 {% macro rush(r, backup, backup_tomorrow=false, with_steps=true, title=none, route=none) %}
 <div class="rush">
   {{ top(title) }}
-  {{ times(r, route=route) }}
+  {{ times(r, total=with_steps, route=route) }}
   <p class="rush-note" data-t="{{ epoch_ms(r.leave) }}" data-rush>
     {{ rush_text(r.leave) }}
   </p>
-  {% if with_steps %}<details><summary>Route</summary>{{ timeline(r) }}</details>{% endif %}
+  {% if with_steps %}<details><summary>Route</summary>{{ stops(r) }}</details>{% endif %}
 </div>
 {% if backup %}
   <div class="backup">
@@ -101,6 +106,21 @@
 {% macro line(r) %}
 <details class="line">
   <summary><b>Leave {{ r.time }}</b><span>Arrive {{ r.arrive }}</span></summary>
-  {{ timeline(r) }}
+  {{ stops(r) }}
 </details>
+{% endmacro %}
+
+{# Small side-by-side buttons, "12:16 → 1:34"; tapping one shows its stops below the row.
+   limit: show only the first few, with a "Show all" link that reveals the rest #}
+{% macro chips(opts, id, limit=none) %}
+<div class="chips">
+  {% for r in opts %}
+    <button type="button" class="chip" aria-expanded="false" aria-controls="{{ id }}-{{ loop.index }}"
+      {%- if limit and loop.index > limit %} hidden{% endif %}>{{ clock(r.time) }} → {{ clock(r.arrive) }}</button>
+  {% endfor %}
+</div>
+{% if limit and opts|length > limit %}
+  <button type="button" class="show-all" onclick="this.previousElementSibling.querySelectorAll('.chip[hidden]').forEach(c => c.hidden = false); this.remove()">Show all ({{ opts|length }})</button>
+{% endif %}
+{% for r in opts %}<div class="chip-route" id="{{ id }}-{{ loop.index }}" hidden>{{ stops(r) }}</div>{% endfor %}
 {% endmacro %}
