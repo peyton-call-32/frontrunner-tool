@@ -20,7 +20,6 @@ from trips import DIRECTIONS, USUAL, Trip, TripStore, load_day, validate
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True  # page changes show up on the next reload
 USER = "me"  # one user for now; becomes the logged-in student once the site has accounts
-TIGHT = 5    # transfers this many minutes or less get flagged
 SOON = 10    # countdowns this many minutes or less get highlighted
 RUSH = 5     # an option leaving in fewer minutes than this is "you may not make it"
 LOOK_AHEAD = 7  # days to search for the next departure (FrontRunner skips Sundays and holidays)
@@ -198,7 +197,7 @@ def helpers():
     now = current_time()
     return dict(day_label=lambda leave: day_label(leave, now),
                 keep_at={"at": g.pretend} if g.get("pretend") else {},
-                short=short, PROVO=PROVO, today_label=now.strftime("%A, %b ") + str(now.day), TIGHT=TIGHT, SOON=SOON, RUSH=RUSH, duration=duration,
+                short=short, PROVO=PROVO, today_label=now.strftime("%A, %B ") + str(now.day), SOON=SOON, RUSH=RUSH, duration=duration,
                 countdown=lambda leave: countdown(leave, now),
                 rush_text=lambda leave: rush_text(leave, now),
                 fmt_time=lambda hhmm: fmt(f"{hhmm}:00"),

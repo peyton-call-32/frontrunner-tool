@@ -2,7 +2,7 @@
 {% from "_option.html" import pill, hm, foot, route_of with context %}
 {% block body %}
 <p class="eyebrow">{{ today_label }}</p>
-<h1 class="page-title">My trips</h1>
+<h1 class="page-title">My Trips</h1>
 
 {% if saved %}<div class="saved">Saved “{{ saved }}” to My trips.</div>{% endif %}
 
@@ -13,7 +13,7 @@
   <a class="card trip-card {{ 'big' if c.big else 'compact' }}" href="{{ url_for('show_trip', name=t.name, **keep_at) }}">
     <div class="top">
       <span class="label">{{ t.name }}</span>
-      {% if r %}{{ pill(r, watch=c.big, refresh=not c.big) }}{% endif %}
+      {% if r %}{{ pill(r, watch=c.big and not v.rush, refresh=not c.big) }}{% endif %}
     </div>
     {% if not r %}
       <p class="route">{{ route_of(t) }}</p>
@@ -47,5 +47,5 @@
   <p class="muted">Plan a trip, then save the ones you take often.</p>
 {% endfor %}
 
-<a class="btn wide cta" href="{{ url_for('plan_trip') }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Plan a trip</a>
+<a class="btn wide cta" href="{{ url_for('plan_trip') }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Plan a Trip</a>
 {% endblock %}

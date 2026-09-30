@@ -38,7 +38,7 @@
         <p class="stop">{{ l.start }}</p>
         {% if i %}
           {% set m = r.legs[i * 2 - 1].minutes %}
-          <div class="xfer {{ 'tight' if m <= TIGHT }}">
+          <div class="xfer">
             <p class="ride">Transfer to {{ l.name }}</p>
             <p class="ride">{{ "Bus" if l.mode == "bus" else "Train" }} leaves at {{ clock(l.time) }} · {{ m }} min to transfer</p>
           </div>
