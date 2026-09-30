@@ -3,6 +3,7 @@
 Run:  .venv/bin/python app.py          → open http://localhost:8080 on this computer
       .venv/bin/python app.py --phone  → also reachable from your phone on the same Wi-Fi
 """
+import os
 import re
 import socket
 from urllib.parse import urlparse
@@ -17,6 +18,7 @@ from planner import TRAIN, journeys, places
 from trips import DIRECTIONS, Trip, TripStore, load_day, validate
 
 app = Flask(__name__)
+app.config["TEMPLATES_AUTO_RELOAD"] = True  # page changes show up on the next reload
 USER = "me"  # one user for now; becomes the logged-in student once the site has accounts
 TIGHT = 5    # transfers this many minutes or less get flagged
 SOON = 10    # countdowns this many minutes or less get highlighted
@@ -404,10 +406,11 @@ def lan_ip():
 
 if __name__ == "__main__":
     phone = "--phone" in sys.argv
-    print("Loading today's schedule...")
-    feed_for(date.today())
-    print("Open http://localhost:8080 on this computer")
-    if phone:
-        print(f"On your phone (same Wi-Fi): http://{lan_ip()}:8080")
-        print("Anyone on this Wi-Fi can open it too, so only use --phone on a network you trust.")
-    app.run(host="0.0.0.0" if phone else "127.0.0.1", port=8080)
+    if os.environ.get("WERKZEUG_RUN_MAIN"):  # the copy that serves pages; restarted whenever a .py file changes
+        print("Loading today's schedule...")
+        feed_for(date.today())
+        print("Open http://localhost:8080 on this computer")
+        if phone:
+            print(f"On your phone (same Wi-Fi): http://{lan_ip()}:8080")
+            print("Anyone on this Wi-Fi can open it too, so only use --phone on a network you trust.")
+    app.run(host="0.0.0.0" if phone else "127.0.0.1", port=8080, use_reloader=True)
