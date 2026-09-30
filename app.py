@@ -13,7 +13,7 @@ from flask import Flask, abort, redirect, render_template, request, url_for
 
 from commute import TRANSFER, best_arrive_by, evening_plans, mins, morning_plans, short
 from frontrunner import fmt, load_feed, rows, seconds
-from planner import TRAIN, journeys, places, train_direction
+from planner import TRAIN, journeys, places
 from trips import DIRECTIONS, Trip, TripStore, load_day, validate
 
 app = Flask(__name__)
@@ -50,62 +50,68 @@ def at(day, gtfs_time):
 PROVO = short(TRANSFER)  # "Provo Central"
 
 
+def toward(headsign):
+    """"To Provo" -> "Provo", "Orem Central Station" -> "Orem Central": the way riders name a direction."""
+    return short(headsign.removeprefix("To "))
+
+
+def ride(mode, board_at, board, alight_at, alight, headsign):
+    """One ride on the timeline, e.g. FrontRunner, Murray Central 10:16 → Provo Central 11:11."""
+    where = toward(headsign)
+    if where.startswith("East Bay"):
+        where = "East Bay loop"
+    elif alight_at.startswith(where):
+        where = None  # the ride ends where it's headed, so "toward" adds nothing
+    else:
+        where = f"toward {where}"
+    return dict(mode=mode, name="FrontRunner" if mode == "train" else "UVX", toward=where,
+                start=board_at, time=fmt(board), end=alight_at, arrive=fmt(alight))
+
+
+def walk(leg_mode, minutes):
+    return dict(mode="walk", minutes=minutes,
+                to="the FrontRunner platform" if leg_mode == "train" else "the UVX stop")
+
+
 def to_campus_option(trip, day, train, bus):
-    """Train from home station to Provo Central, then UVX to campus, written as directions."""
+    """Train from home station to Provo Central, then UVX to campus."""
     home, campus = short(trip.station), short(trip.stop)
+    transfer = mins(train[1], bus[0])
     return dict(
         leave=at(day, train[0]), time=fmt(train[0]), vehicle="train", start=home,
-        dest=campus, arrive=fmt(bus[1]), total=mins(train[0], bus[1]), transfer=mins(train[1], bus[0]),
-        steps=[
-            dict(time=fmt(train[0]), text=f"Board FrontRunner at {home} (southbound)"),
-            dict(time=fmt(train[1]), text=f"Get off at {PROVO}"),
-            dict(walk="Walk to the UVX stop", wait="until the bus", minutes=mins(train[1], bus[0])),
-            dict(time=fmt(bus[0]), text=f"Board UVX at {PROVO}"),
-            dict(time=fmt(bus[1]), text=f"Get off at {campus}"),
-        ],
+        dest=campus, arrive=fmt(bus[1]), total=mins(train[0], bus[1]), transfer=transfer,
+        legs=[ride("train", home, train[0], PROVO, train[1], train[2]), walk("bus", transfer),
+              ride("bus", PROVO, bus[0], campus, bus[1], bus[2])],
     )
 
 
 def home_option(trip, day, bus, train):
-    """UVX from campus to Provo Central, then train to home station, written as directions."""
+    """UVX from campus to Provo Central, then train to home station."""
     home, campus = short(trip.station), short(trip.stop)
+    transfer = mins(bus[1], train[0])
     return dict(
         leave=at(day, bus[0]), time=fmt(bus[0]), vehicle="UVX", start=campus,
-        dest=home, arrive=fmt(train[1]), total=mins(bus[0], train[1]), transfer=mins(bus[1], train[0]),
-        steps=[
-            dict(time=fmt(bus[0]), text=f"Board UVX at {campus} (toward {PROVO})"),
-            dict(time=fmt(bus[1]), text=f"Get off at {PROVO}"),
-            dict(walk="Walk to the FrontRunner platform", wait="until the train", minutes=mins(bus[1], train[0])),
-            dict(time=fmt(train[0]), text=f"Board FrontRunner at {PROVO} (northbound)"),
-            dict(time=fmt(train[1]), text=f"Get off at {home}"),
-        ],
+        dest=home, arrive=fmt(train[1]), total=mins(bus[0], train[1]), transfer=transfer,
+        legs=[ride("bus", campus, bus[0], PROVO, bus[1], bus[2]), walk("train", transfer),
+              ride("train", PROVO, train[0], home, train[1], train[2])],
     )
 
 
 def journey_option(journey, day):
-    """A planned journey (planner.journeys) written as directions, in the same shape as saved-trip options."""
+    """A planned journey (planner.journeys) as a timeline, in the same shape as saved-trip options."""
     first, last = journey[0], journey[-1]
-    steps = []
+    legs = []
     for i, leg in enumerate(journey):
+        mode = "train" if leg["mode"] == TRAIN else "bus"
         if i:
-            prev = journey[i - 1]
-            walk = ("Walk to the FrontRunner platform", "until the train") if leg["mode"] == TRAIN \
-                else ("Walk to the UVX stop", "until the bus")
-            steps.append(dict(walk=walk[0], wait=walk[1], minutes=mins(prev["alight"], leg["board"])))
-        where = short(leg["board_at"])
-        if leg["mode"] == TRAIN:
-            board = f"Board FrontRunner at {where} ({train_direction(leg['headsign'])})"
-        else:
-            toward = short(leg["headsign"])
-            board = f"Board UVX at {where} " + \
-                ("(East Bay loop)" if toward.startswith("East Bay") else f"(toward {toward})")
-        steps.append(dict(time=fmt(leg["board"]), text=board))
-        steps.append(dict(time=fmt(leg["alight"]), text=f"Get off at {short(leg['alight_at'])}"))
+            legs.append(walk(mode, mins(journey[i - 1]["alight"], leg["board"])))
+        legs.append(ride(mode, short(leg["board_at"]), leg["board"], short(leg["alight_at"]), leg["alight"],
+                         leg["headsign"]))
     return dict(
         leave=at(day, first["board"]), arrive_at=at(day, last["alight"]), time=fmt(first["board"]),
         vehicle="train" if first["mode"] == TRAIN else "UVX", start=short(first["board_at"]),
         dest=short(last["alight_at"]), arrive=fmt(last["alight"]), total=mins(first["board"], last["alight"]),
-        transfer=steps[2]["minutes"] if len(journey) > 1 else None, steps=steps,
+        transfer=legs[1]["minutes"] if len(journey) > 1 else None, legs=legs,
     )
 
 
@@ -168,6 +174,11 @@ def rush_text(leave, now):
     return left[0].upper() + left[1:] + ", you may not make it"
 
 
+def duration(minutes):
+    """78 -> "1 h 18 min"."""
+    return f"{minutes // 60} h {minutes % 60} min" if minutes >= 60 else f"{minutes} min"
+
+
 def part_of_day(now):
     """Which kind of trip makes sense right now: to campus before noon, home after."""
     return "to-campus" if now.hour < 12 else "home"
@@ -176,7 +187,7 @@ def part_of_day(now):
 @app.context_processor
 def helpers():
     now = datetime.now()
-    return dict(short=short, PROVO=PROVO, TIGHT=TIGHT, SOON=SOON, RUSH=RUSH,
+    return dict(short=short, PROVO=PROVO, TIGHT=TIGHT, SOON=SOON, RUSH=RUSH, duration=duration,
                 countdown=lambda leave: countdown(leave, now),
                 rush_text=lambda leave: rush_text(leave, now),
                 fmt_time=lambda hhmm: fmt(f"{hhmm}:00"),

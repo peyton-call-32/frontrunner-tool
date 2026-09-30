@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_option.html" import answer, rush, line, sentence, steps with context %}
+{% from "_option.html" import answer, rush, line, sentence, timeline with context %}
 {% block title %}{{ trip.name }}{% endblock %}
 {% block body %}
 <header>
@@ -37,7 +37,7 @@
         <p>The last {{ o.vehicle }} that gets you to {{ o.dest }} by {{ plan.target }} left {{ o.start }} at {{ o.time }}.</p>
       {% else %}
         <p>To be there by {{ plan.target }}, {{ sentence(o, lead="catch") }}</p>
-        <details><summary>Steps</summary>{{ steps(o) }}</details>
+        <details><summary>Route</summary>{{ timeline(o) }}</details>
       {% endif %}
     {% endif %}
   </details>

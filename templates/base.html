@@ -46,25 +46,26 @@
     .card.collapsed { display: flex; justify-content: space-between; align-items: center; font-weight: 500;
       padding: 16px 18px; }
     .card.collapsed .muted { color: var(--faint); }
-    .trip-name { display: block; font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: none;
-      margin-bottom: 10px; }
-    .more { display: block; margin-top: 16px; font-size: 14px; font-weight: 500; color: var(--muted);
-      text-decoration: none; }
+    a.card.now { cursor: pointer; }
 
-    /* The answer: train time → arrival time, big; everything else quiet */
-    .answer { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-    .times { font-size: 30px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; margin: 0;
-      font-variant-numeric: tabular-nums; }
+    /* The answer: leave → arrive, big, each with a small label above */
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .top .label { margin: 0; }
+    .times { display: flex; align-items: flex-end; gap: 10px; }
+    .times > div { min-width: 0; }
+    .times .tl { font-size: 13px; font-weight: 500; color: var(--muted); margin: 0 0 2px; line-height: 1.3; }
+    .times .big { font-size: 30px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; margin: 0;
+      font-variant-numeric: tabular-nums; white-space: nowrap; }
     .times .ampm { font-size: 16px; font-weight: 600; margin-left: 2px; }
-    .times .arrow { color: var(--faint); font-weight: 400; margin: 0 6px; }
-    .meta { font-size: 14px; color: var(--muted); margin: 6px 0 0; }
+    .times .arrow { color: var(--faint); font-size: 22px; line-height: 1.4; }
     .sentence { font-size: 18px; line-height: 1.4; margin: 0; }
-    .pill { flex: none; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
-      background: var(--chip); color: var(--muted); white-space: nowrap; margin-top: 4px; }
+    /* Countdown: accent normally, warning color when it's close */
+    .pill { flex: none; font-size: 14px; font-weight: 600; padding: 5px 12px; border-radius: 999px;
+      background: var(--accent); color: var(--on-accent); white-space: nowrap; }
     .pill.soon { background: var(--soon); color: var(--on-soon); }
 
     /* Leaving too soon: warning + backup */
-    .rush .times { font-size: 22px; color: var(--muted); }
+    .rush .times .big { font-size: 22px; color: var(--muted); }
     .rush-note { color: var(--soon); background: var(--soon-soft); font-weight: 600; font-size: 14px;
       padding: 8px 12px; border-radius: 10px; margin: 12px 0 0; }
     .backup { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
@@ -75,13 +76,23 @@
     .tight-note { color: var(--tight); background: var(--tight-soft); font-weight: 600; font-size: 14px;
       padding: 8px 12px; border-radius: 10px; margin: 14px 0 0; }
 
-    /* Step-by-step directions */
-    .steps { list-style: none; padding: 0; margin: 16px 0 8px; font-size: 15px; }
-    .steps li { display: flex; gap: 12px; padding: 5px 0; }
-    .steps .t { width: 72px; flex: none; font-weight: 600; font-variant-numeric: tabular-nums; }
-    .steps li.walk { color: var(--muted); }
-    .steps li.walk.tight span:last-child { color: var(--tight); background: var(--tight-soft); font-weight: 600;
-      padding: 2px 8px; border-radius: 8px; }
+    /* Route timeline: one row per ride or walk, joined by a thin vertical line */
+    .timeline { list-style: none; padding: 0; margin: 20px 0 0; font-size: 15px; }
+    .timeline li { position: relative; display: flex; gap: 12px; align-items: flex-start; padding-bottom: 14px; }
+    .timeline li:not(:last-child)::before { content: ""; position: absolute; left: 13px; top: 28px; bottom: 0;
+      width: 2px; background: var(--line); }
+    .timeline .icon { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+      background: var(--accent-soft); color: var(--accent); }
+    .timeline .icon svg { width: 16px; height: 16px; fill: currentColor; }
+    .timeline li > span:last-child { padding-top: 3px; font-variant-numeric: tabular-nums; }
+    .timeline b { font-weight: 600; }
+    .timeline .nb { white-space: nowrap; }
+    .timeline .toward { color: var(--muted); }
+    .timeline li.walk { color: var(--muted); }
+    .timeline li.walk .icon { background: var(--chip); color: var(--muted); }
+    .timeline li.tight > span:last-child { color: var(--tight); font-weight: 600; }
+    .timeline li.tight .icon { background: var(--tight-soft); color: var(--tight); }
+    .total { font-size: 14px; color: var(--muted); margin: 0; }
 
     /* One-line options, tap to expand */
     details.line { background: var(--card); border: 1px solid var(--line); border-radius: 12px;

@@ -72,6 +72,3 @@ def best_only(found):
             best_arrival = arr(j)
     return sorted(kept, key=dep)
 
-
-def train_direction(headsign):
-    return "southbound" if "Provo" in headsign else "northbound"
