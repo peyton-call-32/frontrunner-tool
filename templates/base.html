@@ -152,6 +152,37 @@
     .pill.soon::before { animation-name: live-soon; animation-duration: 1.2s; }
     @keyframes live-soon { 0% { box-shadow: 0 0 0 0 rgba(180,35,24,.45); } 100% { box-shadow: 0 0 0 7px rgba(180,35,24,0); } }
 
+    /* A departure on a later day: the day instead of a countdown, no live dot */
+    .pill.day { color: var(--muted); background: var(--inset); box-shadow: inset 0 0 0 1px var(--line); gap: 6px; }
+    .pill.day::before { display: none; }
+
+    /* My trips, big card: "If you miss it" as one quiet row under the route */
+    .miss { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 14px;
+      padding: 10px 12px; border-radius: 12px; background: var(--inset); box-shadow: inset 0 0 0 1px var(--line);
+      font-size: 14px; color: var(--muted); }
+    .miss b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+    /* My trips, compact card: same parts, smaller */
+    .trip-card.compact { padding: 16px 20px; }
+    .trip-card.compact .top { margin-bottom: 6px; }
+    a.card.compact .top .label { font-size: 17px; }
+    .line-times { font-family: var(--display); font-size: 21px; font-weight: 600; letter-spacing: -.02em; margin: 0;
+      font-variant-numeric: tabular-nums; }
+    .trip-card.compact .foot { margin-top: 12px; padding-top: 10px; }
+    .trip-card .none { margin: 8px 0 0; }
+    .after-route { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid var(--line); }
+
+    /* Morning / Evening / Anytime: one segmented control */
+    .seg { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--inset); box-shadow: inset 0 0 0 1px var(--line); }
+    .seg label { flex: 1; margin: 0; padding: 10px 8px; min-height: 44px; display: flex; align-items: center; justify-content: center;
+      border-radius: 10px; font-weight: 600; font-size: 15px; color: var(--muted); cursor: pointer; transition: background .2s, color .2s, box-shadow .2s; }
+    .seg input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+    .seg label:hover { color: var(--text); }
+    .seg label:has(input:checked) { background: var(--card-solid); color: var(--accent);
+      box-shadow: 0 1px 2px rgba(15,50,90,.1), 0 4px 10px -4px rgba(26,110,200,.25); }
+    .seg label:has(input:focus-visible) { outline: 2px solid #1A86EC; outline-offset: 2px; }
+    .hint { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+    fieldset.usual { margin-top: 18px; }
+
     /* Leaving too soon: warning + backup */
     .rush .times .big { font-size: 24px; color: var(--muted); }
     .panels .rush .times .big { font-size: 28px; }
@@ -308,6 +339,7 @@
       document.querySelectorAll(".pill[data-t]").forEach(el => {
         const left = Number(el.dataset.t) - now;
         if (el.hasAttribute("data-watch") && left < RUSH) return reload();
+        if (el.hasAttribute("data-refresh") && left < 0) return reload();
         el.textContent = el.dataset.what + " " + (left < 0 ? "left" : words(left));
         el.classList.toggle("soon", left >= 0 && left <= SOON);
       });

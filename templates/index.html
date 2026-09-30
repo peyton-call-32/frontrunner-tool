@@ -1,29 +1,46 @@
 {% extends "base.html" %}
-{% from "_option.html" import answer, rush, top, foot, route_of with context %}
+{% from "_option.html" import pill, hm, foot, route_of with context %}
 {% block body %}
 <p class="eyebrow">{{ today_label }}</p>
 <h1 class="page-title">My trips</h1>
 
 {% if saved %}<div class="saved">Saved “{{ saved }}” to My trips.</div>{% endif %}
 
+{# Trips whose usual time is now get the big card; every other trip gets the compact one.
+   Both always show the real next departure, whatever the trip's usual time. #}
 {% for c in cards %}
-  {% set t = c.trip %}
-  {% set v = c.view %}
-  {% set route = route_of(t) %}
-  {# Lead with the answer. The whole card opens the trip. #}
-  <a class="card box now" href="{{ url_for('show_trip', name=t.name) }}">
-    {% if v.rush %}
-      {{ rush(v.main, v.backup, v.backup_tomorrow, with_steps=false, title=t.name, route=route) }}
-    {% elif v.main %}
-      {{ answer(v.main, tomorrow=v.main_tomorrow, with_steps=false, title=t.name, route=route) }}
-      {{ foot(v.main) }}
-      {% if v.main_tomorrow %}
-        <p class="muted small">No more today.</p>
+  {% set t, v, r = c.trip, c.view, c.view.main %}
+  <a class="card trip-card {{ 'big' if c.big else 'compact' }}" href="{{ url_for('show_trip', name=t.name, **keep_at) }}">
+    <div class="top">
+      <span class="label">{{ t.name }}</span>
+      {% if r %}{{ pill(r, watch=c.big, refresh=not c.big) }}{% endif %}
+    </div>
+    {% if not r %}
+      <p class="route">{{ route_of(t) }}</p>
+      <p class="muted small none">No departures in the next week.</p>
+    {% elif c.big %}
+      <div class="times">
+        <p class="big">{{ hm(r.time) }}</p>
+        <span class="arrow">→</span>
+        <p class="big">{{ hm(r.arrive) }}</p>
+      </div>
+      <p class="route">{{ route_of(t) }}</p>
+      {% if v.rush %}
+        <p class="rush-note" data-t="{{ epoch_ms(r.leave) }}" data-rush>{{ rush_text(r.leave) }}</p>
       {% endif %}
+      <div class="miss">
+        <span>If you miss it</span>
+        {% if v.backup %}
+          <b>{% if day_label(v.backup.leave) %}{{ day_label(v.backup.leave) }} · {% endif %}{{ v.backup.time }} → {{ v.backup.arrive }}</b>
+        {% else %}
+          <b>Nothing else this week</b>
+        {% endif %}
+      </div>
+      {{ foot(r) }}
     {% else %}
-      {{ top(t.name) }}
-      <p class="route">{{ route }}</p>
-      <p class="muted">No options today or tomorrow.</p>
+      <p class="line-times">{{ r.time }} → {{ r.arrive }}</p>
+      <p class="route">{{ route_of(t) }}</p>
+      {{ foot(r) }}
     {% endif %}
   </a>
 {% else %}

@@ -10,12 +10,12 @@ from urllib.parse import urlparse
 import sys
 from datetime import date, datetime, timedelta
 
-from flask import Flask, abort, redirect, render_template, request, url_for
+from flask import Flask, abort, g, redirect, render_template, request, url_for
 
 from commute import TRANSFER, best_arrive_by, evening_plans, mins, morning_plans, short
 from frontrunner import fmt, load_feed, rows, seconds
 from planner import TRAIN, journeys, places
-from trips import DIRECTIONS, Trip, TripStore, load_day, validate
+from trips import DIRECTIONS, USUAL, Trip, TripStore, load_day, validate
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True  # page changes show up on the next reload
@@ -23,6 +23,7 @@ USER = "me"  # one user for now; becomes the logged-in student once the site has
 TIGHT = 5    # transfers this many minutes or less get flagged
 SOON = 10    # countdowns this many minutes or less get highlighted
 RUSH = 5     # an option leaving in fewer minutes than this is "you may not make it"
+LOOK_AHEAD = 7  # days to search for the next departure (FrontRunner skips Sundays and holidays)
 
 _cache = {}
 
@@ -120,32 +121,57 @@ def options(trip, feed):
     return [home_option(trip, day, bus, train) for bus, train in plans if bus]
 
 
-def trip_view(trip, now):
-    """What to show for a trip right now: the main answer, a backup if the main one is about to leave,
-    the rest of today's options, and the ones already gone."""
-    today = options(trip, feed_for(now.date()))
-    ahead = [r for r in today if r["leave"] >= now]
-    gone = [r for r in today if r["leave"] < now]
-    _tomorrow = []
+def upcoming(trip, now, count):
+    """The next `count` departures from now. When today runs out it keeps going into the next days
+    (Sunday, a holiday), up to LOOK_AHEAD days, so there's always a real next departure to show."""
+    found = []
+    for i in range(LOOK_AHEAD + 1):
+        found += [r for r in options(trip, feed_for(now.date() + timedelta(days=i))) if r["leave"] >= now]
+        if len(found) >= count:
+            break
+    return found[:count]
 
-    def tomorrow_first():
-        if not _tomorrow:
-            _tomorrow.append(options(trip, feed_for(now.date() + timedelta(days=1))))
-        return _tomorrow[0][0] if _tomorrow[0] else None
 
-    v = dict(main=None, main_tomorrow=False, rush=False, backup=None, backup_tomorrow=False, later=[], gone=gone)
-    if ahead:
-        v["main"], later = ahead[0], ahead[1:]
-    else:
-        v["main"], v["main_tomorrow"], later = tomorrow_first(), True, []
-    if v["main"] and not v["main_tomorrow"] and v["main"]["leave"] - now < timedelta(minutes=RUSH):
-        v["rush"] = True
-        if later:
-            v["backup"], later = later[0], later[1:]
-        else:
-            v["backup"], v["backup_tomorrow"] = tomorrow_first(), True
-    v["later"] = later
-    return v
+def trip_view(trip, now, count=2):
+    """What to show for a trip right now: the next departure, the ones after it, whether the next one
+    is about to leave, and (for the trip page) today's departures that are already gone."""
+    ahead = upcoming(trip, now, count)
+    main = ahead[0] if ahead else None
+    return dict(main=main, backup=ahead[1] if len(ahead) > 1 else None, next=ahead[1:],
+                rush=bool(main) and main["leave"] - now < timedelta(minutes=RUSH),
+                gone=[r for r in options(trip, feed_for(now.date())) if r["leave"] < now])
+
+
+def day_label(leave, now):
+    """None for today, otherwise the day it leaves: "Tomorrow" or "Monday" (or "Monday, Oct 12" if over a week out)."""
+    days = (leave.date() - now.date()).days
+    if days <= 0:
+        return None
+    if days == 1:
+        return "Tomorrow"
+    return leave.strftime("%A") if days < 7 else f"{leave:%A, %b} {leave.day}"
+
+
+def top_group(now):
+    """Which usual time goes on top of My trips: morning trips until noon, evening trips from noon to 8 PM,
+    then morning trips again (for tomorrow morning)."""
+    return "evening" if 12 <= now.hour < 20 else "morning"
+
+
+def current_time():
+    """Now, or a pretend time for testing: add ?at=21:30 (today at 9:30 PM) or ?at=2026-10-04T23:30 to a page."""
+    if "now" not in g:
+        g.now = datetime.now()
+        fake = request.args.get("at", "")
+        for pattern in ("%H:%M", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M"):
+            try:
+                t = datetime.strptime(fake, pattern)
+            except ValueError:
+                continue
+            g.now = datetime.combine(g.now.date(), t.time()) if pattern == "%H:%M" else t
+            g.pretend = fake
+            break
+    return g.now
 
 
 def countdown(leave, now):
@@ -167,15 +193,12 @@ def duration(minutes):
     return f"{minutes // 60} h {minutes % 60} min" if minutes >= 60 else f"{minutes} min"
 
 
-def part_of_day(now):
-    """Which kind of trip makes sense right now: to campus before noon, home after."""
-    return "to-campus" if now.hour < 12 else "home"
-
-
 @app.context_processor
 def helpers():
-    now = datetime.now()
-    return dict(short=short, PROVO=PROVO, today_label=now.strftime("%A, %b ") + str(now.day), TIGHT=TIGHT, SOON=SOON, RUSH=RUSH, duration=duration,
+    now = current_time()
+    return dict(day_label=lambda leave: day_label(leave, now),
+                keep_at={"at": g.pretend} if g.get("pretend") else {},
+                short=short, PROVO=PROVO, today_label=now.strftime("%A, %b ") + str(now.day), TIGHT=TIGHT, SOON=SOON, RUSH=RUSH, duration=duration,
                 countdown=lambda leave: countdown(leave, now),
                 rush_text=lambda leave: rush_text(leave, now),
                 fmt_time=lambda hhmm: fmt(f"{hhmm}:00"),
@@ -193,17 +216,20 @@ def get_trip(name):
 
 @app.route("/")
 def home():
-    now = datetime.now()
-    now_kind = part_of_day(now)
-    trips = sorted(TripStore(USER).all(), key=lambda t: t.direction != now_kind)
-    cards = [dict(trip=t, view=trip_view(t, now)) for t in trips]
+    now = current_time()
+    top = top_group(now)
+    # On top: trips whose usual time is now. Then anytime trips, then the rest. sorted() is stable,
+    # so trips in the same group stay in the order they were added.
+    rank = {top: 0, "anytime": 1}
+    trips = sorted(TripStore(USER).all(), key=lambda t: rank.get(t.usual, 2))
+    cards = [dict(trip=t, big=t.usual == top, view=trip_view(t, now)) for t in trips]
     return render_template("index.html", cards=cards, saved=request.args.get("saved"))
 
 
 @app.route("/trip/<name>")
 def show_trip(name):
     trip = get_trip(name)
-    now = datetime.now()
+    now = current_time()
 
     arrive = request.args.get("arrive_by") or trip.arrive_by
     plan = None
@@ -218,7 +244,7 @@ def show_trip(name):
             option = latest_arriving_by(options(trip, feed), at(now.date(), f"{arrive}:00"))
         plan = dict(target=fmt(f"{arrive}:00"), option=option, gone=bool(option) and option["leave"] < now)
 
-    return render_template("trip.html", trip=trip, v=trip_view(trip, now), arrive=arrive,
+    return render_template("trip.html", trip=trip, v=trip_view(trip, now, count=12), arrive=arrive,
                            asked=bool(request.args.get("arrive_by")), plan=plan, today=now.date())
 
 
@@ -336,7 +362,7 @@ def save_plan():
     src = request.form if request.method == "POST" else request.args
     start, end = src.get("start", ""), src.get("end", "")
     trip = Trip(src.get("name", f"{short(start)} to {short(end)}").strip(), "any", "", "",
-                arrive_by=src.get("arrive_by") or None, start=start, end=end)
+                arrive_by=src.get("arrive_by") or None, start=start, end=end, usual=src.get("usual", "anytime"))
     error = None
     if request.method == "POST":
         feed = feed_for(date.today())
@@ -379,7 +405,8 @@ def trip_form(existing):
         except ValueError:
             walk = -1
         trip = Trip(f.get("name", "").strip(), f.get("direction", ""), f.get("station", ""),
-                    f.get("stop", ""), walk, f.get("arrive_by") or None, f.get("start"), f.get("end"))
+                    f.get("stop", ""), walk, f.get("arrive_by") or None, f.get("start"), f.get("end"),
+                    f.get("usual", "anytime"))
         try:
             if trip.direction == "home":
                 trip.arrive_by = None

@@ -1,0 +1,13 @@
+{# "When do you usually take this trip?" Morning / Evening / Anytime, as one segmented control.
+   Anytime is picked unless the trip says otherwise, so people can skip it. #}
+{% macro usual_field(value) %}
+<fieldset class="usual">
+  <legend>When do you usually take this trip?</legend>
+  <div class="seg">
+    {% for v, label in [("morning", "Morning"), ("evening", "Evening"), ("anytime", "Anytime")] %}
+      <label><input type="radio" name="usual" value="{{ v }}" {{ "checked" if v == (value or "anytime") }}>{{ label }}</label>
+    {% endfor %}
+  </div>
+  <p class="hint">Morning trips go to the top of My trips before noon and after 8 PM, evening trips from noon to 8 PM.</p>
+</fieldset>
+{% endmacro %}

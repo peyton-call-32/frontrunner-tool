@@ -1,11 +1,18 @@
 {# How one way to make a trip is written. `r` comes from app.to_campus_option / app.home_option / app.journey_option. #}
 
 {# Countdown pill, e.g. "Train leaves in 6 min" ("Bus ..." when the trip starts on UVX). The page script keeps it current.
-   watch: reload when this option enters "you may not make it" range, so the page can offer a backup. #}
-{% macro pill(r, watch=false) -%}
+   watch: reload when this option enters "you may not make it" range, so the page can offer a backup.
+   refresh: reload once it has left, so the card moves on to the next departure.
+   A departure on a later day shows the day instead: "Tomorrow" or "Monday". #}
+{% macro pill(r, watch=false, refresh=false) -%}
   {%- set what = "Train" if r.vehicle == "train" else "Bus" -%}
+  {%- set day = day_label(r.leave) -%}
+  {%- if day -%}
+  <span class="pill day"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>{{ day }}</span>
+  {%- else -%}
   <span class="pill {{ 'soon' if soon(r.leave) }}" data-t="{{ epoch_ms(r.leave) }}" data-what="{{ what }}"
-    {%- if watch %} data-watch{% endif %}>{{ what }} {{ countdown(r.leave) }}</span>
+    {%- if watch %} data-watch{% endif %}{% if refresh %} data-refresh{% endif %}>{{ what }} {{ countdown(r.leave) }}</span>
+  {%- endif -%}
 {%- endmacro %}
 
 {# "Catch the 8:46 AM train at Murray Central. You'll get to BYU South Campus at 10:06 AM." #}
@@ -119,7 +126,7 @@
 <div class="chips">
   {% for r in opts %}
     <button type="button" class="chip" aria-expanded="false" aria-controls="{{ id }}-{{ loop.index }}"
-      {%- if limit and loop.index > limit %} hidden{% endif %}><b>{{ r.time }} → {{ r.arrive }}</b><span>{{ duration(r.total) }}</span></button>
+      {%- if limit and loop.index > limit %} hidden{% endif %}><b>{{ r.time }} → {{ r.arrive }}</b><span>{% if day_label(r.leave) %}{{ day_label(r.leave) }} · {% endif %}{{ duration(r.total) }}</span></button>
     <div class="chip-route" id="{{ id }}-{{ loop.index }}" hidden>{{ stops(r) }}</div>
   {% endfor %}
 </div>

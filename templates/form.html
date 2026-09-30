@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_usual.html" import usual_field %}
 {% block title %}{{ "Edit trip" if existing else "Add trip" }}{% endblock %}
 {% block body %}
 <a class="back" href="{{ url_for('show_trip', name=existing.name) if existing else url_for('home') }}">‹ Back</a>
@@ -9,6 +10,8 @@
 <form method="post" class="card">
   <label for="name">Trip name</label>
   <input id="name" name="name" value="{{ trip.name }}" placeholder="Morning to BYU" required>
+
+  {{ usual_field(trip.usual) }}
 
   {% if trip.direction == "any" %}
     {# A trip saved from "Plan a trip": any start and destination #}

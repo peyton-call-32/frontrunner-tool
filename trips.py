@@ -31,6 +31,8 @@ TRIPS_DIR = Path(__file__).parent / "trips"
 # to-campus: train then UVX via Provo Central; home: UVX then train via Provo Central;
 # any: planned from start to end (train, UVX, or both), see planner.py
 DIRECTIONS = ("to-campus", "home", "any")
+# When you usually take a trip; decides which trips sit on top of My trips at each time of day
+USUAL = ("morning", "evening", "anytime")
 
 
 @dataclass
@@ -43,6 +45,7 @@ class Trip:
     arrive_by: Optional[str] = None  # not for "home" trips, e.g. "9:00"
     start: Optional[str] = None      # "any" trips: where you start, e.g. "Murray Central Station"
     end: Optional[str] = None        # "any" trips: where you're going
+    usual: str = "anytime"           # "morning", "evening" or "anytime"; trips saved before this existed are anytime
 
 
 class TripStore:
@@ -62,13 +65,16 @@ class TripStore:
         return next((t for t in self.all() if t.name.lower() == name.lower()), None)
 
     def save(self, trip, replacing=None):
-        """Add trip, or replace the trip named `replacing` (lets a trip be renamed)."""
+        """Add trip, or replace the trip named `replacing` (lets a trip be renamed).
+        A replaced trip keeps its place, so My trips stays in the order trips were added."""
         trips = self.all()
+        spot = len(trips)
         if replacing:
+            spot = next((i for i, t in enumerate(trips) if t.name.lower() == replacing.lower()), spot)
             trips = [t for t in trips if t.name.lower() != replacing.lower()]
         if any(t.name.lower() == trip.name.lower() for t in trips):
             raise ValueError(f"You already have a trip called {trip.name!r}")
-        trips.append(trip)
+        trips.insert(spot, trip)
         self.path.parent.mkdir(exist_ok=True)
         self.path.write_text(json.dumps([asdict(t) for t in trips], indent=2) + "\n")
 
@@ -87,6 +93,8 @@ def validate(trip, fr, uvx):
         raise ValueError("Trip name can't be empty or contain /")
     if trip.direction not in DIRECTIONS:
         raise ValueError(f"Direction must be one of: {', '.join(DIRECTIONS)}")
+    if trip.usual not in USUAL:
+        raise ValueError(f"Usual time must be one of: {', '.join(USUAL)}")
     if trip.walk < 0:
         raise ValueError("Walk time can't be negative")
     if trip.arrive_by:
@@ -147,7 +155,7 @@ def describe(t):
     else:
         route = f"{short(t.stop)} → UVX → train → {short(t.station)}"
     extra = f", arrive by {t.arrive_by}" if t.arrive_by else ""
-    return f"{t.name}: {route} ({t.walk} min walk{extra})"
+    return f"{t.name}: {route} ({t.walk} min walk{extra}, usually {t.usual})"
 
 
 def run(trip, arrive, today, fr, uvx):
@@ -191,6 +199,7 @@ def main():
     a.add_argument("--to", dest="end", help="any trips")
     a.add_argument("--walk", type=int, default=3)
     a.add_argument("--arrive-by")
+    a.add_argument("--usual", default="anytime", choices=USUAL, help="when you usually take it")
     e = sub.add_parser("edit")
     e.add_argument("name")
     e.add_argument("--new-name")
@@ -201,6 +210,7 @@ def main():
     e.add_argument("--to", dest="end")
     e.add_argument("--walk", type=int)
     e.add_argument("--arrive-by", help='time like 9:00, or "none" to clear')
+    e.add_argument("--usual", choices=USUAL)
     d = sub.add_parser("delete")
     d.add_argument("name")
     args = p.parse_args()
@@ -224,7 +234,7 @@ def main():
             if store.get(args.name):
                 raise ValueError(f"You already have a trip called {args.name!r}. Use edit to change it.")
             trip = Trip(args.name, args.direction, args.station, args.stop, args.walk, args.arrive_by,
-                        args.start, args.end)
+                        args.start, args.end, args.usual)
             _, fr, uvx = load_today()
             validate(trip, fr, uvx)
             store.save(trip)
@@ -235,7 +245,7 @@ def main():
             if not trip:
                 raise ValueError(f"No trip called {args.name!r}")
             old_name = trip.name
-            for field in ("direction", "station", "stop", "walk", "start", "end"):
+            for field in ("direction", "station", "stop", "walk", "start", "end", "usual"):
                 if getattr(args, field) is not None:
                     setattr(trip, field, getattr(args, field))
             if args.new_name:
