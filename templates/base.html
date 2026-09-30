@@ -4,111 +4,129 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}My trips{% endblock %} · FrontRunner Tool</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #f6f6f8; --card: #ffffff; --text: #1c1c1e; --muted: #6b6b73; --line: #e3e3e8;
-      --accent: #8a1f84; --accent-soft: #f6e7f5; --danger: #b3261e;
+      --bg: #f6f7f9; --card: #ffffff; --text: #1f2328; --muted: #6b7079; --faint: #9aa0a8; --line: #e7e9ed;
+      --shadow: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06); --chip: #eef0f3;
+      /* One accent, used sparingly: the main button and small highlights */
+      --accent: #2447c7; --accent-soft: #eaf0ff; --on-accent: #fff; --danger: #c0352b;
       /* "leaving soon" and "tight transfer" are different warnings, so they get different colors */
-      --soon: #c62828; --soon-soft: #fdecea;
-      --tight: #92400e; --tight-soft: #fef3c7;
+      --soon: #d0342c; --soon-soft: #fdecea; --on-soon: #fff;
+      --tight: #9a5b00; --tight-soft: #fff4d6;
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #111114; --card: #1c1c21; --text: #f2f2f5; --muted: #a0a0aa; --line: #2e2e36;
-        --accent: #e07ada; --accent-soft: #3a1f39; --danger: #ff8a80;
-        --soon: #ff6b6b; --soon-soft: #3d1a1a;
-        --tight: #fbbf24; --tight-soft: #3a2a0a;
+        --bg: #0f1115; --card: #181b21; --text: #eceef2; --muted: #9ba1ab; --faint: #6c727c; --line: #262a32;
+        --shadow: 0 1px 2px rgba(0,0,0,.4); --chip: #242831;
+        --accent: #7c9cff; --accent-soft: #1b2442; --on-accent: #0f1115; --danger: #ff8a80;
+        --soon: #ff6b61; --soon-soft: #3a1714; --on-soon: #1a0906;
+        --tight: #f5b942; --tight-soft: #33270c;
       }
     }
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--text);
-      font: 17px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    main { max-width: 560px; margin: 0 auto; padding: 16px 16px 48px; }
-    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-    h1 { font-size: 24px; margin: 0 0 12px; }
+    body { margin: 0; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased;
+      font: 16px/1.5 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 560px; margin: 0 auto; padding: 20px 16px 56px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    h1 { font-size: 26px; font-weight: 700; letter-spacing: -.02em; margin: 0 0 20px; }
     header h1 { margin: 0; }
-    h2 { font-size: 15px; color: var(--muted); font-weight: 600; margin: 28px 0 8px; }
+    h2 { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em;
+      margin: 32px 0 10px; }
     p { margin: 0 0 8px; }
-    a { color: var(--accent); }
-    .back, .edit { text-decoration: none; font-weight: 600; }
+    a { color: var(--text); }
+    .back, .edit { text-decoration: none; font-weight: 500; font-size: 15px; color: var(--muted); }
     .muted { color: var(--muted); }
     .small { font-size: 14px; }
 
     .card { display: block; background: var(--card); border: 1px solid var(--line); border-radius: 16px;
-      padding: 16px; margin-bottom: 12px; color: var(--text); text-decoration: none; }
-    .card.now { border: 2px solid var(--accent); }
-    .card.collapsed { display: flex; justify-content: space-between; font-weight: 600; padding: 14px 16px; }
-    .trip-name { display: block; font-size: 14px; font-weight: 700; color: var(--accent); text-decoration: none;
-      margin-bottom: 8px; }
-    .more { display: block; margin-top: 12px; font-size: 14px; font-weight: 600; text-decoration: none; }
+      box-shadow: var(--shadow); padding: 18px; margin-bottom: 16px; color: var(--text); text-decoration: none; }
+    .card.collapsed { display: flex; justify-content: space-between; align-items: center; font-weight: 500;
+      padding: 16px 18px; }
+    .card.collapsed .muted { color: var(--faint); }
+    .trip-name { display: block; font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: none;
+      margin-bottom: 10px; }
+    .more { display: block; margin-top: 16px; font-size: 14px; font-weight: 500; color: var(--muted);
+      text-decoration: none; }
 
-    /* The answer sentence and its countdown */
+    /* The answer: train time → arrival time, big; everything else quiet */
     .answer { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-    .sentence { font-size: 20px; line-height: 1.35; margin: 0; }
-    .pill { flex: none; font-size: 14px; font-weight: 700; padding: 4px 10px; border-radius: 999px;
-      background: var(--line); color: var(--text); white-space: nowrap; margin-top: 2px; }
-    .pill.soon { background: var(--soon); color: #fff; }
-    .pill.quiet { background: var(--accent-soft); color: var(--accent); }
+    .times { font-size: 30px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; margin: 0;
+      font-variant-numeric: tabular-nums; }
+    .times .ampm { font-size: 16px; font-weight: 600; margin-left: 2px; }
+    .times .arrow { color: var(--faint); font-weight: 400; margin: 0 6px; }
+    .meta { font-size: 14px; color: var(--muted); margin: 6px 0 0; }
+    .sentence { font-size: 18px; line-height: 1.4; margin: 0; }
+    .pill { flex: none; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+      background: var(--chip); color: var(--muted); white-space: nowrap; margin-top: 4px; }
+    .pill.soon { background: var(--soon); color: var(--on-soon); }
 
     /* Leaving too soon: warning + backup */
-    .rush .sentence { font-size: 17px; color: var(--muted); }
-    .rush-note { color: var(--soon); background: var(--soon-soft); font-weight: 700; padding: 8px 10px;
-      border-radius: 10px; margin: 8px 0; }
-    .backup { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
-    .label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
-      color: var(--muted); margin-bottom: 6px; }
+    .rush .times { font-size: 22px; color: var(--muted); }
+    .rush-note { color: var(--soon); background: var(--soon-soft); font-weight: 600; font-size: 14px;
+      padding: 8px 12px; border-radius: 10px; margin: 12px 0 0; }
+    .backup { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+    .label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+      color: var(--muted); margin: 0 0 6px; }
 
     /* Tight transfer */
-    .tight-note { color: var(--tight); background: var(--tight-soft); font-weight: 600; font-size: 15px;
-      padding: 6px 10px; border-radius: 10px; margin: 10px 0 0; }
+    .tight-note { color: var(--tight); background: var(--tight-soft); font-weight: 600; font-size: 14px;
+      padding: 8px 12px; border-radius: 10px; margin: 14px 0 0; }
 
     /* Step-by-step directions */
-    .steps { list-style: none; padding: 0; margin: 14px 0 6px; font-size: 16px; }
-    .steps li { display: flex; gap: 10px; padding: 5px 0; }
-    .steps .t { width: 72px; flex: none; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .steps { list-style: none; padding: 0; margin: 16px 0 8px; font-size: 15px; }
+    .steps li { display: flex; gap: 12px; padding: 5px 0; }
+    .steps .t { width: 72px; flex: none; font-weight: 600; font-variant-numeric: tabular-nums; }
     .steps li.walk { color: var(--muted); }
     .steps li.walk.tight span:last-child { color: var(--tight); background: var(--tight-soft); font-weight: 600;
       padding: 2px 8px; border-radius: 8px; }
 
     /* One-line options, tap to expand */
     details.line { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
-      margin-bottom: 6px; padding: 0 14px; }
-    details.line summary { padding: 12px 0; cursor: pointer; font-variant-numeric: tabular-nums; }
+      margin-bottom: 8px; padding: 0 14px; font-size: 15px; }
+    details.line summary { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0;
+      cursor: pointer; list-style: none; font-variant-numeric: tabular-nums; }
+    details.line summary::-webkit-details-marker { display: none; }
+    details.line summary b { font-weight: 600; }
+    details.line summary span { color: var(--muted); }
     details.line[open] { padding-bottom: 8px; }
     details summary { cursor: pointer; }
-    details.earlier > summary { color: var(--muted); margin: 24px 0 8px; }
+    .card details > summary { color: var(--muted); font-size: 14px; font-weight: 500; margin-top: 12px; }
+    details.earlier > summary { color: var(--muted); font-size: 14px; margin: 28px 0 10px; }
 
     /* Arrive-by, deliberately small */
     details.arrive { font-size: 15px; margin: 4px 0 0; }
-    details.arrive > summary { color: var(--accent); font-weight: 600; padding: 6px 0; }
+    details.arrive > summary { color: var(--accent); font-weight: 600; font-size: 14px; padding: 6px 0; }
     details.arrive form { margin: 8px 0 12px; }
     details.arrive p { margin-top: 8px; }
 
-    .btn { display: inline-block; border: 0; border-radius: 10px; padding: 10px 16px; font: inherit; font-weight: 600;
-      background: var(--accent); color: #fff; text-decoration: none; cursor: pointer; }
-    .btn.small { padding: 6px 12px; font-size: 15px; }
-    .btn.wide { display: block; text-align: center; margin-top: 20px; }
-    .saved { background: var(--accent-soft); color: var(--accent); font-weight: 600; padding: 10px 12px;
-      border-radius: 10px; margin-bottom: 12px; }
-    .note { font-size: 14px; color: var(--muted); margin: 4px 0 16px; }
+    .btn { display: inline-block; border: 0; border-radius: 12px; padding: 12px 18px; font: inherit; font-weight: 600;
+      background: var(--accent); color: var(--on-accent); text-decoration: none; cursor: pointer; }
+    .btn.small { padding: 7px 14px; font-size: 14px; }
+    .btn.wide { display: block; text-align: center; margin-top: 28px; }
+    .btn.secondary { background: var(--card); color: var(--text); border: 1px solid var(--line); box-shadow: var(--shadow); }
+    .btn.danger { background: transparent; color: var(--danger); border: 1px solid var(--line); }
+    .saved { background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 15px;
+      padding: 10px 14px; border-radius: 12px; margin-bottom: 16px; }
+    .note { font-size: 14px; color: var(--muted); margin: 4px 0 20px; }
+    .summary { font-size: 15px; color: var(--muted); margin: -12px 0 16px; }
     .choice { display: flex; align-items: center; gap: 10px; font-weight: 400; margin: 8px 0; }
-    .choice input[type=radio] { width: auto; margin: 0; }
+    .choice input[type=radio] { width: auto; margin: 0; accent-color: var(--accent); }
     .choice input[type=time], .choice input[type=date] { width: auto; padding: 6px 8px; }
     fieldset { border: 0; padding: 0; margin: 0; }
-    legend { font-weight: 600; margin: 14px 0 2px; padding: 0; }
-    .summary { font-size: 15px; color: var(--muted); margin-bottom: 12px; }
-    .btn.secondary { background: transparent; color: var(--accent); border: 1px solid var(--line); }
-    .btn.danger { background: transparent; color: var(--danger); border: 1px solid var(--line); }
-    @media (prefers-color-scheme: dark) { .btn:not(.secondary):not(.danger) { color: #111; } }
+    legend { font-weight: 600; font-size: 14px; margin: 18px 0 4px; padding: 0; }
     form.inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     form.inline label { margin: 0; }
-    label { display: block; font-weight: 600; margin: 14px 0 6px; }
-    input, select { font: inherit; width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--line);
+    label { display: block; font-weight: 600; font-size: 14px; margin: 16px 0 6px; }
+    input, select { font: inherit; width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
       background: var(--card); color: var(--text); }
+    input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
     form.inline input { width: auto; padding: 6px 8px; }
-    .error { background: var(--card); border: 1px solid var(--danger); color: var(--danger); padding: 12px;
-      border-radius: 10px; margin-bottom: 12px; }
-    .actions { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
+    .error { background: var(--soon-soft); color: var(--danger); font-weight: 500; padding: 12px 14px;
+      border-radius: 12px; margin-bottom: 16px; }
+    .actions { display: flex; gap: 8px; margin-top: 24px; flex-wrap: wrap; }
   </style>
 </head>
 <body>

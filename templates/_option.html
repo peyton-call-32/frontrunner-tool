@@ -30,19 +30,39 @@
 <p class="muted small">{{ r.total }} min from {{ r.start }}</p>
 {% endmacro %}
 
-{# The main answer: sentence + countdown, then steps (optional). #}
+{# "8:46 AM" -> 8:46 with a small AM, so the digits carry the weight #}
+{% macro hm(t) -%}
+  {%- set p = t.split(" ", 1) -%}{{ p[0] }}<span class="ampm">{{ p[1] }}</span>
+{%- endmacro %}
+
+{# The big "8:46 AM → 10:06 AM" line #}
+{% macro times(r) -%}
+  <p class="times">{{ hm(r.time) }}<span class="arrow">→</span>{{ hm(r.arrive) }}</p>
+{%- endmacro %}
+
+{# "Train from Murray Central · arrive BYU South Campus" #}
+{% macro meta(r) -%}
+  <p class="meta">{{ r.vehicle[0]|upper ~ r.vehicle[1:] }} from {{ r.start }} · arrive {{ r.dest }}</p>
+{%- endmacro %}
+
+{# The main answer: times + countdown, then steps (optional).
+   lead is "Catch", "Tomorrow, catch" or "On Friday, Oct 2, catch"; anything but today shows as a day label. #}
 {% macro answer(r, tomorrow=false, with_steps=true, lead=none, watch=true) %}
+{% set lead = lead or ("Tomorrow, catch" if tomorrow else "Catch") %}
+{% if lead != "Catch" %}<p class="label">{{ lead[:-7] }}</p>{% endif %}
 <div class="answer">
-  <p class="sentence">{{ sentence(r, lead or ("Tomorrow, catch" if tomorrow else "Catch")) }}</p>
+  {{ times(r) }}
   {% if not tomorrow %}{{ pill(r, watch=watch) }}{% endif %}
 </div>
+{{ meta(r) }}
 {% if with_steps %}{{ steps(r) }}{% endif %}
 {% endmacro %}
 
 {# Main answer that leaves too soon to count on: warning, then the backup right below. #}
 {% macro rush(r, backup, backup_tomorrow=false, with_steps=true) %}
 <div class="rush">
-  <p class="sentence">{{ sentence(r) }}</p>
+  {{ times(r) }}
+  {{ meta(r) }}
   <p class="rush-note" data-t="{{ epoch_ms(r.leave) }}" data-rush>
     {{ rush_text(r.leave) }}
   </p>
@@ -50,19 +70,18 @@
 </div>
 {% if backup %}
   <div class="backup">
-    <p class="label">If you miss it</p>
-    {{ answer(backup, tomorrow=backup_tomorrow, with_steps=with_steps, watch=false,
-              lead="Tomorrow, catch" if backup_tomorrow else "Catch") }}
+    <p class="label">If you miss it{% if backup_tomorrow %} · tomorrow{% endif %}</p>
+    {{ answer(backup, tomorrow=backup_tomorrow, with_steps=with_steps, watch=false, lead="Catch") }}
   </div>
 {% else %}
   <p class="muted">That's the last one today.</p>
 {% endif %}
 {% endmacro %}
 
-{# "9:16 AM train → BYU South Campus at 10:34 AM", tap for steps #}
+{# "9:16 AM train   arrive 10:34 AM", tap for steps #}
 {% macro line(r) %}
 <details class="line">
-  <summary>{{ r.time }} {{ r.vehicle }} → {{ r.dest }} at {{ r.arrive }}</summary>
+  <summary><b>{{ r.time }} {{ r.vehicle }}</b><span>arrive {{ r.arrive }}</span></summary>
   {{ steps(r) }}
 </details>
 {% endmacro %}
