@@ -5,6 +5,7 @@ Run:  .venv/bin/python app.py          → open http://localhost:8080 on this co
 """
 import re
 import socket
+from urllib.parse import urlparse
 import sys
 from datetime import date, datetime, timedelta
 
@@ -197,7 +198,7 @@ def home():
     now_kind = part_of_day(now)
     trips = sorted(TripStore(USER).all(), key=lambda t: t.direction != now_kind)
     cards = [dict(trip=t, view=trip_view(t, now) if t.direction == now_kind else None) for t in trips]
-    return render_template("index.html", cards=cards)
+    return render_template("index.html", cards=cards, saved=request.args.get("saved"))
 
 
 @app.route("/trip/<name>")
@@ -323,11 +324,39 @@ def plan_trip():
             r["backup"], r["others"] = r["others"][0], r["others"][1:]
             r["backup_lead"] = "Catch"
 
-    save = url_for("new_trip", start=p["start"], end=p["end"],
+    save = url_for("save_plan", start=p["start"], end=p["end"],
                    **({"arrive_by": p["time"]} if p["when"] == "arrive" else {}))
     return render_template("plan_result.html", p=p, r=r, today=today, save_url=save,
                            change_url=url_for("plan_trip", change=1, **{k: v for k, v in request.args.items()
                                                                         if k != "change"}))
+
+
+@app.route("/plan/save", methods=["GET", "POST"])
+def save_plan():
+    """"Save to My trips" from planner results: just ask for a name, then go home."""
+    src = request.form if request.method == "POST" else request.args
+    start, end = src.get("start", ""), src.get("end", "")
+    trip = Trip(src.get("name", f"{short(start)} to {short(end)}").strip(), "any", "", "",
+                arrive_by=src.get("arrive_by") or None, start=start, end=end)
+    error = None
+    if request.method == "POST":
+        feed = feed_for(date.today())
+        try:
+            validate(trip, feed["fr"], feed["uvx"])
+            TripStore(USER).save(trip)
+            return redirect(url_for("home", saved=trip.name))
+        except ValueError as err:
+            error = str(err)
+    return render_template("save.html", trip=trip, error=error,
+                           back=planner_page(src.get("back") or request.referrer))
+
+
+def planner_page(link):
+    """The planner results page this link points to on this site, or the planner form."""
+    u = urlparse(link or "")
+    if u.path == url_for("plan_trip") and u.query and (not u.netloc or u.netloc == request.host):
+        return f"{u.path}?{u.query}"
+    return url_for("plan_trip")
 
 
 @app.route("/new", methods=["GET", "POST"])
@@ -344,11 +373,6 @@ def trip_form(existing):
     feed = feed_for(date.today())
     error = None
     trip = existing or Trip("", "to-campus", "", "")
-    q = request.args
-    if not existing and q.get("start") and q.get("end"):
-        # "Save this trip" from the planner
-        trip = Trip(f"{short(q['start'])} to {short(q['end'])}", "any", "", "",
-                    arrive_by=q.get("arrive_by") or None, start=q["start"], end=q["end"])
     if request.method == "POST":
         f = request.form
         try:

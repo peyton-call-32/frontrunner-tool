@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Save to My trips{% endblock %}
+{% block body %}
+<header><a class="back" href="{{ back }}">‹ Back</a></header>
+<h1>Save to My trips</h1>
+<p class="summary">{{ short(trip.start) }} to {{ short(trip.end) }}{% if trip.arrive_by %}, arrive by {{ fmt_time(trip.arrive_by) }}{% endif %}</p>
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+<form method="post" class="card">
+  <label for="name">Name this trip</label>
+  <input id="name" name="name" value="{{ trip.name }}" required autofocus>
+  <input type="hidden" name="start" value="{{ trip.start }}">
+  <input type="hidden" name="end" value="{{ trip.end }}">
+  <input type="hidden" name="arrive_by" value="{{ trip.arrive_by or '' }}">
+  <input type="hidden" name="back" value="{{ back }}">
+  <div class="actions"><button class="btn" type="submit">Save</button></div>
+</form>
+{% endblock %}

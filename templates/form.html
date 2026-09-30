@@ -11,7 +11,7 @@
   <input id="name" name="name" value="{{ trip.name }}" placeholder="Morning to BYU" required>
 
   {% if trip.direction == "any" %}
-    {# A trip saved from "Plan a different trip": any start and destination #}
+    {# A trip saved from "Plan a trip": any start and destination #}
     <input type="hidden" name="direction" value="any">
     {% for field, label, chosen in [("start", "Starting from", trip.start), ("end", "Going to", trip.end)] %}
       <label for="{{ field }}">{{ label }}</label>
