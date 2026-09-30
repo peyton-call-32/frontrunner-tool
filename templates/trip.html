@@ -6,7 +6,7 @@
   <a class="back" href="{{ url_for('home') }}">‹ My trips</a>
   <a class="edit" href="{{ url_for('edit_trip', name=trip.name) }}">Edit</a>
 </header>
-<h1>{{ trip.name }}</h1>
+<h1 class="trip-name">{{ trip.name }}</h1>
 
 {# 1. The answer #}
 <section class="card now">
