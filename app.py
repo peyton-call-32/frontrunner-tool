@@ -1,4 +1,4 @@
-"""FrontRunner Tool website: My trips on your phone.
+"""Catch website: My trips on your phone.
 
 Run:  .venv/bin/python app.py          → open http://localhost:8080 on this computer
       .venv/bin/python app.py --phone  → also reachable from your phone on the same Wi-Fi
@@ -175,7 +175,7 @@ def part_of_day(now):
 @app.context_processor
 def helpers():
     now = datetime.now()
-    return dict(short=short, PROVO=PROVO, TIGHT=TIGHT, SOON=SOON, RUSH=RUSH, duration=duration,
+    return dict(short=short, PROVO=PROVO, today_label=now.strftime("%A, %b ") + str(now.day), TIGHT=TIGHT, SOON=SOON, RUSH=RUSH, duration=duration,
                 countdown=lambda leave: countdown(leave, now),
                 rush_text=lambda leave: rush_text(leave, now),
                 fmt_time=lambda hhmm: fmt(f"{hhmm}:00"),

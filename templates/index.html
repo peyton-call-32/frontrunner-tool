@@ -1,22 +1,22 @@
 {% extends "base.html" %}
-{% from "_option.html" import answer, rush, top with context %}
+{% from "_option.html" import answer, rush, top, foot, route_of with context %}
 {% block body %}
-<h1 class="page-title">My Trips</h1>
+<p class="eyebrow">{{ today_label }}</p>
+<h1 class="page-title">My trips</h1>
 
 {% if saved %}<div class="saved">Saved “{{ saved }}” to My trips.</div>{% endif %}
 
 {% for c in cards %}
   {% set t = c.trip %}
   {% set v = c.view %}
-  {# Just the two ends: "Murray Central → BYU South Campus" #}
-  {% set ends = [t.stop, t.station] if t.direction == "home" else ([t.start, t.end] if t.direction == "any" else [t.station, t.stop]) %}
-  {% set route = ends|map("replace", " Station", "")|join(" → ") %}
+  {% set route = route_of(t) %}
   {# Lead with the answer. The whole card opens the trip. #}
   <a class="card box now" href="{{ url_for('show_trip', name=t.name) }}">
     {% if v.rush %}
       {{ rush(v.main, v.backup, v.backup_tomorrow, with_steps=false, title=t.name, route=route) }}
     {% elif v.main %}
       {{ answer(v.main, tomorrow=v.main_tomorrow, with_steps=false, title=t.name, route=route) }}
+      {{ foot(v.main) }}
       {% if v.main_tomorrow %}
         <p class="muted small">No more today.</p>
       {% endif %}
@@ -30,5 +30,5 @@
   <p class="muted">Plan a trip, then save the ones you take often.</p>
 {% endfor %}
 
-<a class="btn wide cta" href="{{ url_for('plan_trip') }}">Plan a Trip</a>
+<a class="btn wide cta" href="{{ url_for('plan_trip') }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Plan a trip</a>
 {% endblock %}

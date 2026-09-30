@@ -3,179 +3,224 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}My trips{% endblock %} · FrontRunner Tool</title>
+  <title>{% block title %}My trips{% endblock %} · Catch</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231D4ED8'/%3E%3Cg fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='10' y='7' width='12' height='12' rx='3'/%3E%3Cpath d='M10 13h12M13 25l-2-4M19 25l2-4'/%3E%3C/g%3E%3C/svg%3E">
   <style>
     :root {
-      /* Palette: blue #1565c0, red #c62828, white #ffffff, gray #999999, near-black #252525.
-         Cards, lines and soft tints are light shades of these. */
-      --bg: #ffffff; --card: #f4f4f4; --field: #ffffff; --text: #252525; --muted: #6e6e6e; --faint: #999999;
-      --line: #e5e5e5; --field-line: #cccccc; --box-line: #999999; --box-shadow: 0 2px 10px rgba(0,0,0,.14); --shadow: none; --chip: #e9e9e9;
-      /* One accent, used sparingly: the main button and small highlights */
-      --accent: #1565c0; --accent-soft: #e6eef9; --on-accent: #fff; --danger: #c62828;
+      /* Clean & Calm: light gray page, white cards, one blue accent */
+      --bg: #F4F5F7; --card: #FFFFFF; --field: #FFFFFF; --inset: #F5F7FA;
+      --text: #0F172A; --muted: #5B6472; --faint: #98A2B3;
+      --line: #EEF0F3; --border: #E4E7EC; --field-line: #D0D5DD;
+      --shadow: 0 1px 2px rgba(16,24,40,.04), 0 4px 14px rgba(16,24,40,.05);
+      --accent: #1D4ED8; --accent-hover: #1E40AF; --accent-soft: #EEF3FF; --on-accent: #FFFFFF; --danger: #C62828;
       /* "leaving soon" and "tight transfer" are different warnings, so they get different colors */
-      --soon: #c62828; --soon-soft: #fbe9e9; --on-soon: #fff;
-      --tight: #9a5b00; --tight-soft: #fff4d6;
+      --soon: #B42318; --soon-soft: #FEF0EF;
+      --tight: #7A4A00; --tight-soft: #FFF4DB;
+      --radius: 16px; --radius-sm: 12px;
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #1a1a1a; --card: #252525; --field: #333333; --text: #ffffff; --muted: #999999; --faint: #6e6e6e;
-        --line: #333333; --field-line: #4a4a4a; --box-line: #6e6e6e; --box-shadow: 0 2px 10px rgba(0,0,0,.5); --shadow: none; --chip: #333333;
-        --accent: #5b9be6; --accent-soft: #16263b; --on-accent: #1a1a1a; --danger: #ef6b6b;
-        --soon: #ef6b6b; --soon-soft: #3a1818; --on-soon: #1a1a1a;
-        --tight: #f5b942; --tight-soft: #33270c;
+        --bg: #0F1115; --card: #181B21; --field: #1F232B; --inset: #1F232B;
+        --text: #F2F4F7; --muted: #A3AAB6; --faint: #6B7280;
+        --line: #262A33; --border: #2A2F38; --field-line: #3A404B;
+        --shadow: none;
+        --accent: #7AA2FF; --accent-hover: #9DBBFF; --accent-soft: #1A2542; --on-accent: #0F1115; --danger: #F97066;
+        --soon: #F97066; --soon-soft: #3A1A18;
+        --tight: #F5B942; --tight-soft: #33270C;
       }
     }
     * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
     body { margin: 0; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased;
-      font: 16px/1.45 Nunito, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    main { max-width: 560px; margin: 0 auto; padding: 36px 20px 64px; }
-    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px; }
-    h1 { font-size: 30px; font-weight: 500; letter-spacing: -.01em; line-height: 1.2; margin: 0 0 28px; }
-    header h1 { margin: 0; }
-    h1.trip-name { font-weight: 600; }
-    h1.page-title { text-align: center; }
-    h2 { font-size: 20px; font-weight: 500; letter-spacing: -.01em; margin: 40px 0 16px; }
+      font: 16px/1.45 Geist, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    a { color: var(--accent); }
+    a:hover { color: var(--accent-hover); }
+
+    /* Top bar: logo on the left, Plan a trip on the right */
+    .bar { background: var(--card); border-bottom: 1px solid var(--border); }
+    .bar-in { max-width: 560px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 12px 0; font-weight: 700; font-size: 16px;
+      letter-spacing: -.01em; color: var(--text); text-decoration: none; }
+    .brand:hover { color: var(--text); }
+    .logo { width: 30px; height: 30px; border-radius: 8px; background: var(--accent); color: var(--on-accent);
+      display: flex; align-items: center; justify-content: center; }
+    .bar-link { font-size: 14px; font-weight: 600; text-decoration: none; padding: 12px 0; }
+
+    main { max-width: 560px; margin: 0 auto; padding: 28px 20px 64px; }
+    main > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -8px 0 16px; }
+    .eyebrow { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin: 0; }
+    h1 { font-size: 30px; font-weight: 700; letter-spacing: -.025em; line-height: 1.2; margin: 0 0 24px; }
+    h1.page-title { margin-top: 6px; }
+    h1.trip-name { margin-bottom: 4px; }
+    .subtitle { color: var(--muted); font-size: 15px; margin: 0 0 24px; }
+    h2 { font-size: 17px; font-weight: 600; letter-spacing: -.01em; margin: 32px 0 12px; }
     p { margin: 0 0 8px; }
-    a { color: var(--text); }
-    .back, .edit { text-decoration: none; font-weight: 400; font-size: 15px; color: var(--muted); }
+    .back, .edit { display: inline-flex; align-items: center; gap: 4px; text-decoration: none; font-size: 15px; padding: 10px 0; }
+    .back { color: var(--muted); font-weight: 500; }
+    .back:hover { color: var(--text); }
+    .edit { font-weight: 600; }
     .muted { color: var(--muted); }
     .small { font-size: 14px; }
 
-    /* Flat sections split by thin lines, not rounded boxes */
-    .card { display: block; padding: 20px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
-      color: var(--text); text-decoration: none; }
-    .card + .card { border-top: 0; }
-    form.card { border: 0; padding: 0; }
-    a.card.now { cursor: pointer; }
-    /* Trip name on home page cards: bigger, dark, normal case so it reads at a glance */
-    a.card.now .top .label { font-size: 18px; font-weight: 600; color: var(--text); }
-    /* My trips: each saved trip in its own filled, outlined card, with clear space between cards */
-    .card.box { background: var(--card); border: 1px solid var(--box-line); border-radius: 14px; box-shadow: var(--box-shadow);
-      padding: 18px 20px; margin-bottom: 20px; }
-    .card.box + .card.box { border-top: 1px solid var(--box-line); }
-    .card.box .backup { border-top-color: var(--field-line); }
-    a.card.box > .top .label, a.card.box > .rush > .top .label { font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
-    /* Name row as a tinted header strip across the top of the card (not the "If you miss it" row inside) */
-    .card.box > .top, .card.box > .rush > .top { margin: -18px -20px 16px; padding: 12px 20px;
-      background: var(--accent-soft); border-bottom: 1px solid var(--box-line); border-radius: 13px 13px 0 0; }
+    /* Every card: white, softly outlined, rounded */
+    .card, .panels .panel, .panels > .rush, .panels > .backup {
+      display: block; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 20px; margin: 0 0 16px; color: var(--text); text-decoration: none; }
+    a.card { transition: border-color .15s, transform .15s; }
+    a.card:hover { color: var(--text); border-color: #C9D2E3; }
+    a.card:active { transform: scale(.99); }
+    @media (prefers-color-scheme: dark) { a.card:hover { border-color: #3A404B; } }
     .route { font-size: 14px; color: var(--muted); margin: 4px 0 0; }
 
-    /* Trip page: each part (Next, If you miss it, Later today, Earlier today) in its own card, like My trips */
-    .panels .panel, .panels > .rush, .panels > .backup { display: block; background: var(--card); border: 1px solid var(--box-line);
-      border-radius: 14px; box-shadow: var(--box-shadow); padding: 18px 20px; margin: 0 0 20px; }
-    .panels .panel > .top, .panels > .rush > .top, .panels > .backup > .top { margin: -18px -20px 16px; padding: 12px 20px;
-      background: var(--accent-soft); border-bottom: 1px solid var(--box-line); border-radius: 13px 13px 0 0; }
-    .panels .top .label { font-size: 17px; font-weight: 700; color: var(--text); }
-    /* Leaving too soon: red header so the warning reads first */
-    .panels > .rush > .top { background: var(--soon-soft); }
-    .panels > .rush > .top .label { color: var(--soon); }
-    .panels > .rush details > summary { color: var(--muted); font-size: 15px; margin-top: 14px; }
-    /* Earlier today: just the header until opened */
-    .panels summary.top { list-style: none; cursor: pointer; }
-    .panels summary.top::-webkit-details-marker { display: none; }
-    .panels summary.top::after { content: "Show"; color: var(--accent); font-size: 15px; font-weight: 600; }
-    .panels details[open] > summary.top::after { content: "Hide"; }
-    .panels details.panel:not([open]) > summary.top { margin-bottom: -18px; border-bottom: 0; border-radius: 13px; }
-    .panels .chip { border-radius: 8px; background: var(--field); }
-    .panels .chip[aria-expanded="true"] { background: var(--accent-soft); }
-
-    /* The answer: leave → arrive, big */
+    /* Row above the times: title on the left, countdown on the right */
     .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
     .top .label { margin: 0; }
-    .times { display: flex; align-items: center; gap: 10px; }
-    .times .big { font-size: 32px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; margin: 0;
+    .label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin: 0 0 6px; }
+    /* On My trips the title is the trip's name */
+    a.card .top .label { font-size: 17px; font-weight: 600; color: var(--text); text-transform: none; letter-spacing: -.01em; }
+    a.card .backup .top .label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+
+    /* Earlier today: just the header until opened */
+    .panels summary.top { list-style: none; cursor: pointer; margin: 0; }
+    .panels summary.top::-webkit-details-marker { display: none; }
+    .panels summary.top::after { content: "Show"; color: var(--accent); font-size: 15px; font-weight: 600; }
+    .panels details[open] > summary.top { margin-bottom: 8px; }
+    .panels details[open] > summary.top::after { content: "Hide"; }
+
+    /* The answer: leave → arrive, big */
+    .times { display: flex; align-items: baseline; gap: 10px; }
+    .times .big { font-size: 30px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; margin: 0;
       font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .times .ampm { font-size: 16px; font-weight: 700; margin-left: 2px; }
+    .panels .times .big { font-size: 40px; letter-spacing: -.03em; }
+    .times .ampm { font-size: 15px; font-weight: 600; color: var(--muted); margin-left: 3px; letter-spacing: 0; }
+    .panels .times .ampm { font-size: 17px; }
     .times .arrow { color: var(--faint); font-size: 22px; }
     .sentence { font-size: 18px; line-height: 1.4; margin: 0; }
-    /* Countdown: accent normally, warning color when it's close */
-    .pill { flex: none; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums;
-      color: var(--accent); white-space: nowrap; }
-    .pill.soon { color: var(--soon); }
+    /* Countdown badge: blue normally, red when it's close */
+    .pill { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600;
+      font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--accent); background: var(--accent-soft);
+      padding: 5px 10px; border-radius: 999px; }
+    .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .pill.soon { color: var(--soon); background: var(--soon-soft); }
 
     /* Leaving too soon: warning + backup */
     .rush .times .big { font-size: 22px; color: var(--muted); }
-    .rush-note { color: var(--soon); font-weight: 700; font-size: 15px; margin: 12px 0 0; }
+    .panels .rush .times .big { font-size: 26px; }
+    .panels > .rush > .top .label { color: var(--soon); }
+    .rush-note { color: var(--soon); font-weight: 600; font-size: 15px; margin: 12px 0 0; }
     .backup { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
-    .label { font-size: 15px; font-weight: 400; color: var(--muted); margin: 0 0 6px; }
+    .panels > .backup { margin-top: 0; }
+
+    /* My trips: modes and total time along the bottom of each card */
+    .foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 14px; padding-top: 12px;
+      border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+    .modes { display: flex; align-items: center; gap: 4px; color: var(--text); }
+    .modes .sep { color: var(--faint); }
 
     /* Route: a line of stops. Time on the left, a dot on a connecting line, station on the right */
-    .stops { list-style: none; padding: 0; margin: 20px 0 0; font-size: 15px; }
-    .stops li { position: relative; display: grid; grid-template-columns: 44px 12px 1fr; column-gap: 12px;
-      padding-bottom: 18px; }
+    .stops { list-style: none; padding: 18px 0 0; margin: 18px 0 0; font-size: 15px; border-top: 1px solid var(--line); }
+    .chip-route .stops { border-top: 0; margin-top: 4px; padding-top: 8px; }
+    .stops li { position: relative; display: grid; grid-template-columns: 44px 12px 1fr; column-gap: 14px; padding-bottom: 22px; }
     .stops li:last-child { padding-bottom: 0; }
-    .stops li:not(:last-child)::before { content: ""; position: absolute; left: 61px; top: 12px; bottom: -6px;
-      width: 2px; background: var(--accent); opacity: .35; }
-    .stops .t { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.5; }
+    .stops li:not(:last-child)::before { content: ""; position: absolute; left: 63px; top: 17px; bottom: -5px;
+      width: 2px; background: var(--accent); }
+    .stops .t { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 22px; }
     .stops .dot { position: relative; width: 12px; height: 12px; margin-top: 5px; border-radius: 50%;
-      border: 2px solid var(--accent); background: var(--bg); }
+      border: 2.5px solid var(--accent); background: var(--card); z-index: 1; }
     .stops li:first-child .dot, .stops li:last-child .dot { background: var(--accent); }
-    .stops p { margin: 0; line-height: 1.5; }
+    .stops p { margin: 0; line-height: 22px; }
     .stops .stop { font-weight: 600; }
-    .stops .ride { color: var(--muted); font-size: 14px; }
-    .stops .ride.tight { color: var(--tight); font-weight: 600; }
+    .stops .ride { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; line-height: 1.4; margin-top: 2px; }
+    .xfer { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--inset); font-size: 13px; line-height: 1.4; }
+    .xfer p { margin: 0; line-height: 1.4; }
+    .xfer .ride { margin: 0; }
+    .xfer .ride:first-child { color: var(--text); font-weight: 600; }
+    .xfer.tight { background: var(--tight-soft); }
+    .xfer.tight .ride { color: var(--tight); }
     .total { font-size: 14px; color: var(--muted); margin: 4px 0 0; }
 
-    /* Other times today: small side-by-side buttons */
-    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-    .chip { font: inherit; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; padding: 6px 12px;
-      border: 1px solid var(--field-line); border-radius: 4px; background: transparent; color: var(--text); cursor: pointer; }
-    .chip[aria-expanded="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
-    .chip-route { padding: 4px 0 8px; }
-    .show-all { font: inherit; font-size: 15px; font-weight: 500; color: var(--accent); background: none; border: 0;
-      padding: 10px 0 0; cursor: pointer; }
+    /* Other times today: one row each, tap to show its stops */
+    .chip { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0;
+      font: inherit; font-size: 16px; text-align: left; color: var(--text); background: none; border: 0;
+      border-top: 1px solid var(--line); cursor: pointer; font-variant-numeric: tabular-nums; }
+    .chip[hidden] { display: none; }
+    .chip b { font-weight: 600; }
+    .chip span { color: var(--muted); font-size: 14px; }
+    .chip:hover b { color: var(--accent); }
+    .chip[aria-expanded="true"] b { color: var(--accent); }
+    .chip-route { padding: 0 0 16px; }
+    .show-all { display: block; width: 100%; min-height: 44px; font: inherit; font-size: 15px; font-weight: 600; color: var(--accent);
+      background: none; border: 0; border-top: 1px solid var(--line); padding: 10px 0 0; cursor: pointer; }
+    .panels .panel:has(.chips) { padding-bottom: 8px; }
 
     /* One-line options, tap to expand */
-    details.line { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: 16px; }
-    details.line + details.line { border-top: 0; }
-    details.line summary { display: flex; justify-content: space-between; gap: 12px; padding: 16px 0;
+    details.line { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      box-shadow: var(--shadow); padding: 0 16px; margin-bottom: 8px; font-size: 16px; }
+    details.line summary { display: flex; justify-content: space-between; gap: 12px; padding: 14px 0;
       cursor: pointer; list-style: none; font-variant-numeric: tabular-nums; }
     details.line summary::-webkit-details-marker { display: none; }
-    details.line summary b { font-weight: 700; }
+    details.line summary b { font-weight: 600; }
     details.line summary span { color: var(--muted); }
-    details.line[open] { padding-bottom: 8px; }
+    details.line .stops { margin-top: 0; }
+    details.line[open] { padding-bottom: 16px; }
     details summary { cursor: pointer; }
-    .card details > summary { color: var(--muted); font-size: 15px; font-weight: 400; margin-top: 14px; }
-    details.earlier > summary { color: var(--muted); font-size: 15px; margin: 32px 0 12px; }
+    .card details > summary, .rush details > summary { color: var(--accent); font-size: 15px; font-weight: 500; margin-top: 14px; }
 
     /* Arrive-by, deliberately small */
-    details.arrive { font-size: 15px; margin: 32px 0 0; }
-    details.arrive > summary { color: var(--accent); font-weight: 500; font-size: 15px; padding: 6px 0; }
+    details.arrive { font-size: 15px; margin: 8px 0 0; text-align: center; }
+    details.arrive > summary { display: inline-block; color: var(--accent); font-weight: 500; font-size: 15px; padding: 10px; }
+    details.arrive[open] { text-align: left; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 8px 20px 16px; }
+    details.arrive[open] > summary { padding-left: 0; }
     details.arrive form { margin: 8px 0 12px; }
     details.arrive p { margin-top: 8px; }
 
-    .btn { display: inline-block; border: 1px solid transparent; border-radius: 4px; padding: 14px 20px; font: inherit; font-weight: 500;
-      background: var(--accent); color: var(--on-accent); text-decoration: none; cursor: pointer; }
-    .btn.small { padding: 8px 16px; font-size: 15px; }
-    .btn.wide { display: block; text-align: center; margin-top: 32px; }
-    /* "Plan a trip" under the My trips cards: same rounded corners and shadow as the cards, still solid blue */
-    .btn.cta { border-radius: 14px; padding: 16px 20px; font-size: 17px; font-weight: 800; margin-top: 8px;
-      box-shadow: var(--box-shadow); }
-    .btn.secondary { background: transparent; color: var(--text); border-color: var(--field-line); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent;
+      border-radius: var(--radius-sm); padding: 13px 20px; font: inherit; font-weight: 600;
+      background: var(--accent); color: var(--on-accent); text-decoration: none; cursor: pointer; transition: background .15s; }
+    .btn:hover { background: var(--accent-hover); color: var(--on-accent); }
+    .btn.small { padding: 8px 16px; font-size: 15px; border-radius: 10px; }
+    .btn.wide { display: flex; width: 100%; margin-top: 24px; }
+    .btn.cta { min-height: 52px; font-size: 16px; margin-top: 8px; }
+    .btn.secondary { background: var(--card); color: var(--text); border-color: var(--field-line); }
+    .btn.secondary:hover { background: var(--inset); color: var(--text); }
     .btn.danger { background: transparent; color: var(--danger); border-color: var(--field-line); }
-    .saved { color: var(--accent); font-weight: 700; font-size: 15px; margin-bottom: 20px; }
-    .note { font-size: 15px; color: var(--muted); margin: 4px 0 24px; }
-    .summary { font-size: 15px; color: var(--muted); margin: -12px 0 16px; }
+    .btn.danger:hover { background: var(--soon-soft); color: var(--danger); }
+    .saved { color: var(--accent); background: var(--accent-soft); font-weight: 600; font-size: 15px;
+      padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 16px; }
+    .note { font-size: 15px; color: var(--muted); margin: -12px 0 20px; }
+    .summary { font-size: 15px; color: var(--muted); margin: -16px 0 20px; }
     .choice { display: flex; align-items: center; gap: 10px; font-weight: 400; margin: 8px 0; }
     .choice input[type=radio] { width: auto; margin: 0; accent-color: var(--accent); }
     .choice input[type=time], .choice input[type=date] { width: auto; padding: 6px 8px; }
     fieldset { border: 0; padding: 0; margin: 20px 0 0; }
-    legend { font-weight: 500; font-size: 15px; margin: 0; padding: 0 0 6px; }
+    legend { font-weight: 600; font-size: 15px; margin: 0; padding: 0 0 6px; }
     form.inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     form.inline label { margin: 0; }
-    label { display: block; font-weight: 500; font-size: 15px; margin: 18px 0 8px; }
-    input, select { font: inherit; width: 100%; padding: 12px 14px; border-radius: 4px; border: 1px solid var(--field-line);
+    form.card label:first-child { margin-top: 0; }
+    label { display: block; font-weight: 600; font-size: 15px; margin: 18px 0 8px; }
+    input, select { font: inherit; width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--field-line);
       background: var(--field); color: var(--text); }
     input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
     form.inline input { width: auto; padding: 6px 8px; }
-    .error { color: var(--danger); font-weight: 700; margin-bottom: 20px; }
+    .error { color: var(--danger); background: var(--soon-soft); font-weight: 600; padding: 12px 16px;
+      border-radius: var(--radius-sm); margin-bottom: 16px; }
     .actions { display: flex; gap: 8px; margin-top: 24px; flex-wrap: wrap; }
   </style>
 </head>
 <body>
+  <header class="bar">
+    <div class="bar-in">
+      <a class="brand" href="{{ url_for('home') }}">
+        <span class="logo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 10h14M9 21l-2-4M15 21l2-4"/></svg></span>
+        Catch
+      </a>
+      <a class="bar-link" href="{{ url_for('plan_trip') }}">Plan a trip</a>
+    </div>
+  </header>
   <main>{% block body %}{% endblock %}</main>
   <script>
     // Keep countdowns current. Reload when the answer should change:
