@@ -11,7 +11,8 @@ from datetime import date, datetime, timedelta
 from flask import Flask, abort, redirect, render_template, request, url_for
 
 from commute import TRANSFER, best_arrive_by, evening_plans, mins, morning_plans, short
-from frontrunner import fmt, seconds
+from frontrunner import fmt, load_feed, rows, seconds
+from planner import TRAIN, journeys, places, train_direction
 from trips import DIRECTIONS, Trip, TripStore, load_day, validate
 
 app = Flask(__name__)
@@ -29,7 +30,8 @@ def feed_for(day):
         for old in [d for d in _cache if d < date.today()]:
             del _cache[old]
         fr, uvx = load_day(day)
-        _cache[day] = dict(date=day, fr=fr, uvx=uvx, stations=stop_names(fr), stops=stop_names(uvx))
+        _cache[day] = dict(date=day, fr=fr, uvx=uvx, stations=stop_names(fr), stops=stop_names(uvx),
+                           places=places(fr, uvx))
     return _cache[day]
 
 
@@ -56,7 +58,7 @@ def to_campus_option(trip, day, train, bus):
         steps=[
             dict(time=fmt(train[0]), text=f"Board FrontRunner at {home} (southbound)"),
             dict(time=fmt(train[1]), text=f"Get off at {PROVO}"),
-            dict(walk="Walk to the UVX stop", wait="until the bus"),
+            dict(walk="Walk to the UVX stop", wait="until the bus", minutes=mins(train[1], bus[0])),
             dict(time=fmt(bus[0]), text=f"Board UVX at {PROVO}"),
             dict(time=fmt(bus[1]), text=f"Get off at {campus}"),
         ],
@@ -72,16 +74,50 @@ def home_option(trip, day, bus, train):
         steps=[
             dict(time=fmt(bus[0]), text=f"Board UVX at {campus} (toward {PROVO})"),
             dict(time=fmt(bus[1]), text=f"Get off at {PROVO}"),
-            dict(walk="Walk to the FrontRunner platform", wait="until the train"),
+            dict(walk="Walk to the FrontRunner platform", wait="until the train", minutes=mins(bus[1], train[0])),
             dict(time=fmt(train[0]), text=f"Board FrontRunner at {PROVO} (northbound)"),
             dict(time=fmt(train[1]), text=f"Get off at {home}"),
         ],
     )
 
 
+def journey_option(journey, day):
+    """A planned journey (planner.journeys) written as directions, in the same shape as saved-trip options."""
+    first, last = journey[0], journey[-1]
+    steps = []
+    for i, leg in enumerate(journey):
+        if i:
+            prev = journey[i - 1]
+            walk = ("Walk to the FrontRunner platform", "until the train") if leg["mode"] == TRAIN \
+                else ("Walk to the UVX stop", "until the bus")
+            steps.append(dict(walk=walk[0], wait=walk[1], minutes=mins(prev["alight"], leg["board"])))
+        where = short(leg["board_at"])
+        if leg["mode"] == TRAIN:
+            board = f"Board FrontRunner at {where} ({train_direction(leg['headsign'])})"
+        else:
+            toward = short(leg["headsign"])
+            board = f"Board UVX at {where} " + \
+                ("(East Bay loop)" if toward.startswith("East Bay") else f"(toward {toward})")
+        steps.append(dict(time=fmt(leg["board"]), text=board))
+        steps.append(dict(time=fmt(leg["alight"]), text=f"Get off at {short(leg['alight_at'])}"))
+    return dict(
+        leave=at(day, first["board"]), arrive_at=at(day, last["alight"]), time=fmt(first["board"]),
+        vehicle="train" if first["mode"] == TRAIN else "UVX", start=short(first["board_at"]),
+        dest=short(last["alight_at"]), arrive=fmt(last["alight"]), total=mins(first["board"], last["alight"]),
+        transfer=steps[2]["minutes"] if len(journey) > 1 else None, steps=steps,
+    )
+
+
+def planned_options(feed, start, end, walk=3):
+    return [journey_option(j, feed["date"]) for j in journeys(feed["fr"], feed["uvx"], start, end, walk)]
+
+
 def options(trip, feed):
-    """Every way to make the trip on feed's day, in the order you'd leave. Schedule math is in commute.py."""
+    """Every way to make the trip on feed's day, in the order you'd leave. Schedule math is in commute.py
+    (saved commutes) and planner.py (any other trip)."""
     day = feed["date"]
+    if trip.direction == "any":
+        return planned_options(feed, trip.start, trip.end, trip.walk)
     if trip.direction == "to-campus":
         plans = morning_plans(feed["fr"], feed["uvx"], trip.station, trip.stop, trip.walk)
         return [to_campus_option(trip, day, train, bus) for train, bus in plans if bus]
@@ -142,6 +178,7 @@ def helpers():
     return dict(short=short, PROVO=PROVO, TIGHT=TIGHT, SOON=SOON, RUSH=RUSH,
                 countdown=lambda leave: countdown(leave, now),
                 rush_text=lambda leave: rush_text(leave, now),
+                fmt_time=lambda hhmm: fmt(f"{hhmm}:00"),
                 soon=lambda leave: (leave - now).total_seconds() <= SOON * 60,
                 epoch_ms=lambda leave: int(leave.timestamp() * 1000),
                 server_ms=lambda: int(now.timestamp() * 1000))
@@ -170,16 +207,127 @@ def show_trip(name):
 
     arrive = request.args.get("arrive_by") or trip.arrive_by
     plan = None
-    if trip.direction == "to-campus" and arrive:
+    if trip.direction != "home" and arrive:
         if not re.fullmatch(r"\d{1,2}:\d{2}", arrive):
             abort(400)
         feed = feed_for(now.date())
-        best = best_arrive_by(morning_plans(feed["fr"], feed["uvx"], trip.station, trip.stop, trip.walk), arrive)
-        option = to_campus_option(trip, now.date(), *best) if best else None
+        if trip.direction == "to-campus":
+            best = best_arrive_by(morning_plans(feed["fr"], feed["uvx"], trip.station, trip.stop, trip.walk), arrive)
+            option = to_campus_option(trip, now.date(), *best) if best else None
+        else:
+            option = latest_arriving_by(options(trip, feed), at(now.date(), f"{arrive}:00"))
         plan = dict(target=fmt(f"{arrive}:00"), option=option, gone=bool(option) and option["leave"] < now)
 
     return render_template("trip.html", trip=trip, v=trip_view(trip, now), arrive=arrive,
                            asked=bool(request.args.get("arrive_by")), plan=plan, today=now.date())
+
+
+def latest_arriving_by(opts, deadline):
+    """The option that leaves latest but still arrives by deadline, or None."""
+    fits = [o for o in opts if o["arrive_at"] <= deadline]
+    return fits[-1] if fits else None
+
+
+def day_lead(day, today):
+    """How the answer sentence starts: 'Catch', 'Tomorrow, catch' or 'On Friday, Oct 2, catch'."""
+    if day == today:
+        return "Catch"
+    if day == today + timedelta(days=1):
+        return "Tomorrow, catch"
+    return f"On {day.strftime('%A, %b')} {day.day}, catch"
+
+
+def schedule_dates():
+    """First and last day UTA's downloaded schedule covers."""
+    info = next(rows(load_feed(), "feed_info.txt"))
+    parse = lambda d: datetime.strptime(d, "%Y%m%d").date()
+    return parse(info["feed_start_date"]), parse(info["feed_end_date"])
+
+
+def read_plan_form(args, today):
+    """Check the planner inputs. Returns (inputs, error)."""
+    stations, stops = feed_for(today)["places"]
+    p = dict(start=args.get("from", ""), end=args.get("to", ""), when=args.get("when", "now"),
+             time=args.get("time", ""), day=args.get("day", "today"), date=args.get("date", ""))
+    if p["start"] not in stations + stops or p["end"] not in stations + stops:
+        return p, "Choose where you're starting and where you're going."
+    if p["start"] == p["end"]:
+        return p, "Your start and destination are the same."
+    if p["when"] not in ("now", "leave", "arrive"):
+        p["when"] = "now"
+    if p["when"] != "now" and not re.fullmatch(r"\d{1,2}:\d{2}", p["time"]):
+        return p, "Pick a time."
+    if p["when"] == "now" or p["day"] == "today":
+        p["day"], p["on"] = "today", today
+    elif p["day"] == "tomorrow":
+        p["on"] = today + timedelta(days=1)
+    else:
+        try:
+            p["on"] = datetime.strptime(p["date"], "%Y-%m-%d").date()
+        except ValueError:
+            return p, "Pick a date."
+        if p["on"] < today:
+            return p, "Pick today or a later date."
+    first, last = schedule_dates()
+    if not first <= p["on"] <= last:
+        return p, (f"The schedule this tool has covers {first:%b} {first.day} to {last:%b} {last.day}, {last.year}. "
+                   "Pick a date in that range.")
+    return p, None
+
+
+@app.route("/plan")
+def plan_trip():
+    now = datetime.now()
+    today = now.date()
+    stations, stops = feed_for(today)["places"]
+    if "from" not in request.args or "change" in request.args:
+        p, _ = read_plan_form(request.args, today)
+        return render_template("plan.html", p=p, stations=stations, stops=stops, error=None)
+    p, error = read_plan_form(request.args, today)
+    if error:
+        return render_template("plan.html", p=p, stations=stations, stops=stops, error=error)
+
+    day = p["on"]
+    opts = planned_options(feed_for(day), p["start"], p["end"])
+    r = dict(main=None, lead=day_lead(day, today), rush=False, backup=None, backup_lead=None,
+             others=[], others_title="Later options", note=None, gone=None)
+
+    if p["when"] == "arrive":
+        deadline = at(day, f"{p['time']}:00")
+        fits = [o for o in opts if o["arrive_at"] <= deadline]
+        if not fits:
+            r["note"] = f"No trip gets you to {short(p['end'])} by {fmt(p['time'] + ':00')} that day."
+        elif fits[-1]["leave"] < now:
+            r["gone"] = fits[-1]
+        else:
+            r["main"] = fits[-1]
+            r["others"] = [o for o in reversed(fits[:-1]) if o["leave"] >= now][:5]
+            r["others_title"] = "Earlier options that also get you there in time"
+    else:
+        start = now if p["when"] == "now" else at(day, f"{p['time']}:00")
+        ahead = [o for o in opts if o["leave"] >= start]
+        if ahead:
+            r["main"], r["others"] = ahead[0], ahead[1:]
+        else:
+            nxt = day + timedelta(days=1)
+            later = planned_options(feed_for(nxt), p["start"], p["end"]) if nxt <= schedule_dates()[1] else []
+            r["note"] = "Nothing else leaves that day." if p["when"] == "leave" else "The last one today has left."
+            if later:
+                r["main"], r["lead"] = later[0], day_lead(nxt, today)
+
+    main = r["main"]
+    if main and main["leave"].date() == today and main["leave"] - now < timedelta(minutes=RUSH) \
+            and p["when"] != "arrive":
+        r["rush"] = True
+        if r["others"]:
+            r["backup"], r["others"] = r["others"][0], r["others"][1:]
+            r["backup_lead"] = "Catch"
+
+    save = url_for("new_trip", start=p["start"], end=p["end"],
+                   **({"arrive_by": p["time"]} if p["when"] == "arrive" else {}))
+    return render_template("plan_result.html", p=p, r=r, today=today, save_url=save,
+                           change_url=url_for("plan_trip", change=1, **{k: v for k, v in request.args.items()
+                                                                        if k != "change"}))
 
 
 @app.route("/new", methods=["GET", "POST"])
@@ -196,6 +344,11 @@ def trip_form(existing):
     feed = feed_for(date.today())
     error = None
     trip = existing or Trip("", "to-campus", "", "")
+    q = request.args
+    if not existing and q.get("start") and q.get("end"):
+        # "Save this trip" from the planner
+        trip = Trip(f"{short(q['start'])} to {short(q['end'])}", "any", "", "",
+                    arrive_by=q.get("arrive_by") or None, start=q["start"], end=q["end"])
     if request.method == "POST":
         f = request.form
         try:
@@ -203,9 +356,9 @@ def trip_form(existing):
         except ValueError:
             walk = -1
         trip = Trip(f.get("name", "").strip(), f.get("direction", ""), f.get("station", ""),
-                    f.get("stop", ""), walk, f.get("arrive_by") or None)
+                    f.get("stop", ""), walk, f.get("arrive_by") or None, f.get("start"), f.get("end"))
         try:
-            if trip.direction != "to-campus":
+            if trip.direction == "home":
                 trip.arrive_by = None
             validate(trip, feed["fr"], feed["uvx"])
             TripStore(USER).save(trip, replacing=existing.name if existing else None)
@@ -213,7 +366,7 @@ def trip_form(existing):
         except ValueError as err:
             error = str(err)
     return render_template("form.html", trip=trip, existing=existing, error=error, directions=DIRECTIONS,
-                           stations=feed["stations"], stops=feed["stops"])
+                           stations=feed["stations"], stops=feed["stops"], places=feed["places"])
 
 
 @app.route("/trip/<name>/delete", methods=["POST"])

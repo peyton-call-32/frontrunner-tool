@@ -21,7 +21,7 @@
 </section>
 
 {# 2. Arrive-by: secondary, so small and closed unless used #}
-{% if trip.direction == "to-campus" %}
+{% if trip.direction != "home" %}
   <details class="arrive" {% if asked %}open{% endif %}>
     <summary>{% if arrive and plan %}Arrive by {{ plan.target }}{% else %}Need to arrive by a set time?{% endif %}</summary>
     <form class="inline" method="get">
@@ -32,9 +32,9 @@
     {% if plan %}
       {% set o = plan.option %}
       {% if not o %}
-        <p>No train today gets you to {{ short(trip.stop) }} by {{ plan.target }}.</p>
+        <p>Nothing today gets you to {{ short(trip.end or trip.stop) }} by {{ plan.target }}.</p>
       {% elif plan.gone %}
-        <p>The last train that gets you to {{ o.dest }} by {{ plan.target }} left {{ o.start }} at {{ o.time }}.</p>
+        <p>The last {{ o.vehicle }} that gets you to {{ o.dest }} by {{ plan.target }} left {{ o.start }} at {{ o.time }}.</p>
       {% else %}
         <p>To be there by {{ plan.target }}, {{ sentence(o, lead="catch") }}</p>
         <details><summary>Steps</summary>{{ steps(o) }}</details>

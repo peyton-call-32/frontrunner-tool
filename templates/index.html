@@ -19,7 +19,7 @@
         {{ answer(v.main, tomorrow=v.main_tomorrow, with_steps=false) }}
         {% if v.main_tomorrow %}
           <p class="muted small">No more today.</p>
-        {% elif v.main.transfer <= TIGHT %}
+        {% elif v.main.transfer is not none and v.main.transfer <= TIGHT %}
           <p class="tight-note">⚠ Only {{ v.main.transfer }} min to transfer at {{ PROVO }}</p>
         {% endif %}
       {% else %}
@@ -39,4 +39,6 @@
     <a class="btn" href="{{ url_for('new_trip') }}">Add your first trip</a>
   </div>
 {% endfor %}
+
+<a class="btn secondary wide" href="{{ url_for('plan_trip') }}">Plan a different trip</a>
 {% endblock %}

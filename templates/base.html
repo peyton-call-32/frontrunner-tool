@@ -87,6 +87,14 @@
     .btn { display: inline-block; border: 0; border-radius: 10px; padding: 10px 16px; font: inherit; font-weight: 600;
       background: var(--accent); color: #fff; text-decoration: none; cursor: pointer; }
     .btn.small { padding: 6px 12px; font-size: 15px; }
+    .btn.wide { display: block; text-align: center; margin-top: 20px; }
+    .note { font-size: 14px; color: var(--muted); margin: 4px 0 16px; }
+    .choice { display: flex; align-items: center; gap: 10px; font-weight: 400; margin: 8px 0; }
+    .choice input[type=radio] { width: auto; margin: 0; }
+    .choice input[type=time], .choice input[type=date] { width: auto; padding: 6px 8px; }
+    fieldset { border: 0; padding: 0; margin: 0; }
+    legend { font-weight: 600; margin: 14px 0 2px; padding: 0; }
+    .summary { font-size: 15px; color: var(--muted); margin-bottom: 12px; }
     .btn.secondary { background: transparent; color: var(--accent); border: 1px solid var(--line); }
     .btn.danger { background: transparent; color: var(--danger); border: 1px solid var(--line); }
     @media (prefers-color-scheme: dark) { .btn:not(.secondary):not(.danger) { color: #111; } }

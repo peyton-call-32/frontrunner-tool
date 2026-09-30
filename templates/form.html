@@ -10,6 +10,22 @@
   <label for="name">Trip name</label>
   <input id="name" name="name" value="{{ trip.name }}" placeholder="Morning to BYU" required>
 
+  {% if trip.direction == "any" %}
+    {# A trip saved from "Plan a different trip": any start and destination #}
+    <input type="hidden" name="direction" value="any">
+    {% for field, label, chosen in [("start", "Starting from", trip.start), ("end", "Going to", trip.end)] %}
+      <label for="{{ field }}">{{ label }}</label>
+      <select id="{{ field }}" name="{{ field }}" required>
+        <option value="">Choose a station or stop</option>
+        <optgroup label="FrontRunner stations">
+          {% for s in places[0] %}<option value="{{ s }}" {{ "selected" if s == chosen }}>{{ short(s) }}</option>{% endfor %}
+        </optgroup>
+        <optgroup label="UVX stops">
+          {% for s in places[1] %}<option value="{{ s }}" {{ "selected" if s == chosen }}>{{ short(s) }}</option>{% endfor %}
+        </optgroup>
+      </select>
+    {% endfor %}
+  {% else %}
   <label for="direction">Direction</label>
   <select id="direction" name="direction">
     <option value="to-campus" {{ "selected" if trip.direction == "to-campus" }}>To campus (train, then UVX)</option>
@@ -27,11 +43,12 @@
     <option value="">Choose a stop</option>
     {% for s in stops %}<option value="{{ s }}" {{ "selected" if s == trip.stop }}>{{ short(s) }}</option>{% endfor %}
   </select>
+  {% endif %}
 
-  <label for="walk">Minutes to walk between train and bus at Provo Central</label>
+  <label for="walk">Minutes to walk between train and bus{% if trip.direction != "any" %} at Provo Central{% endif %}</label>
   <input id="walk" name="walk" type="number" min="0" max="30" value="{{ trip.walk }}">
 
-  <label for="arrive_by">Usual arrive-by time (optional, to-campus trips only)</label>
+  <label for="arrive_by">Usual arrive-by time (optional{% if trip.direction != "any" %}, to-campus trips only{% endif %})</label>
   <input id="arrive_by" name="arrive_by" type="time" value="{{ trip.arrive_by or '' }}">
 
   <div class="actions">

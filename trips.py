@@ -7,6 +7,7 @@ Usage:
   python3 trips.py list
   python3 trips.py run "Morning to BYU" [--arrive-by 9:00]
   python3 trips.py add "Morning to BYU" --direction to-campus --station "Murray Central" --stop "BYU South Campus" [--walk 3] [--arrive-by 9:00]
+  python3 trips.py add "To SLC" --direction any --from "Murray Central" --to "Salt Lake Central"
   python3 trips.py edit "Morning to BYU" [--new-name ...] [--direction ...] [--station ...] [--stop ...] [--walk ...] [--arrive-by ... | --arrive-by none]
   python3 trips.py delete "Morning to BYU"
 Add --user NAME to any command to use another student's trips (default: me).
@@ -23,20 +24,25 @@ from typing import Optional
 from commute import (
     arrive_by, evening_plans, load_trips, morning_plans, print_evening, print_morning, short,
 )
-from frontrunner import active_services, load_feed
+from frontrunner import active_services, fmt, load_feed, seconds
+from planner import journeys, places
 
 TRIPS_DIR = Path(__file__).parent / "trips"
-DIRECTIONS = ("to-campus", "home")  # to-campus: train then UVX; home: UVX then train
+# to-campus: train then UVX via Provo Central; home: UVX then train via Provo Central;
+# any: planned from start to end (train, UVX, or both), see planner.py
+DIRECTIONS = ("to-campus", "home", "any")
 
 
 @dataclass
 class Trip:
     name: str
-    direction: str       # "to-campus" or "home"
-    station: str         # FrontRunner station, e.g. "Murray Central Station"
-    stop: str            # UVX stop, e.g. "BYU South Campus Station"
-    walk: int = 3        # minutes to transfer at Provo Central
-    arrive_by: Optional[str] = None  # to-campus only, e.g. "9:00"
+    direction: str       # "to-campus", "home" or "any"
+    station: str         # to-campus/home: FrontRunner station, e.g. "Murray Central Station"
+    stop: str            # to-campus/home: UVX stop, e.g. "BYU South Campus Station"
+    walk: int = 3        # minutes to transfer between train and UVX
+    arrive_by: Optional[str] = None  # not for "home" trips, e.g. "9:00"
+    start: Optional[str] = None      # "any" trips: where you start, e.g. "Murray Central Station"
+    end: Optional[str] = None        # "any" trips: where you're going
 
 
 class TripStore:
@@ -84,10 +90,19 @@ def validate(trip, fr, uvx):
     if trip.walk < 0:
         raise ValueError("Walk time can't be negative")
     if trip.arrive_by:
-        if trip.direction != "to-campus":
-            raise ValueError("--arrive-by only applies to to-campus trips")
+        if trip.direction == "home":
+            raise ValueError("Arrive-by doesn't apply to going-home trips")
         if not re.fullmatch(r"\d{1,2}:\d{2}", trip.arrive_by):
             raise ValueError("Arrive-by time should look like 9:00 or 14:30")
+    if trip.direction == "any":
+        stations, stops = places(fr, uvx)
+        trip.start = resolve_name(trip.start or "", stations + stops, "station or stop")
+        trip.end = resolve_name(trip.end or "", stations + stops, "station or stop")
+        if trip.start == trip.end:
+            raise ValueError("Start and destination are the same")
+        trip.station = trip.stop = ""
+        return
+    trip.start = trip.end = None
     trip.station = resolve(trip.station, fr, "FrontRunner station")
     trip.stop = resolve(trip.stop, uvx, "UVX stop")
 
@@ -96,7 +111,13 @@ def resolve(text, trips, kind):
     """Match what the user typed to a real stop name served by these trips."""
     names = {s[0] for stops in trips for s in stops}
     # Station platforms/bays share a base name, e.g. "Provo Central Station (Bay H)"
-    names = {re.sub(r" \(.*\)$", "", n) for n in names}
+    return resolve_name(text, {re.sub(r" \(.*\)$", "", n) for n in names}, kind)
+
+
+def resolve_name(text, names, kind):
+    """Match what the user typed to one of names."""
+    if not text.strip():
+        raise ValueError(f"Choose a {kind}")
     want = text.lower().removesuffix(" station")
     matches = sorted(n for n in names if n.lower().removesuffix(" station") == want) or \
         sorted(n for n in names if want in n.lower())
@@ -119,7 +140,9 @@ def load_today():
 
 
 def describe(t):
-    if t.direction == "to-campus":
+    if t.direction == "any":
+        route = f"{short(t.start)} → {short(t.end)}"
+    elif t.direction == "to-campus":
         route = f"{short(t.station)} → train → UVX → {short(t.stop)}"
     else:
         route = f"{short(t.stop)} → UVX → train → {short(t.station)}"
@@ -129,7 +152,18 @@ def describe(t):
 
 def run(trip, arrive, today, fr, uvx):
     print(f"{trip.name} — {today:%A, %b %d, %Y}\n")
-    if trip.direction == "to-campus":
+    if trip.direction == "any":
+        options = journeys(fr, uvx, trip.start, trip.end, trip.walk)
+        if arrive:
+            h, m = map(int, arrive.split(":"))
+            options = [j for j in options if seconds(j[-1]["alight"]) <= seconds(f"{h}:{m:02d}:00")][-1:]
+        for j in options:
+            print("  " + "  then  ".join(
+                f'{l["mode"]} {fmt(l["board"])} {short(l["board_at"])} → {fmt(l["alight"])} {short(l["alight_at"])}'
+                for l in j))
+        if not options:
+            print("No options.")
+    elif trip.direction == "to-campus":
         plans = morning_plans(fr, uvx, trip.station, trip.stop, trip.walk)
         if arrive:
             arrive_by(plans, arrive, trip.station, trip.stop)
@@ -151,8 +185,10 @@ def main():
     a = sub.add_parser("add")
     a.add_argument("name")
     a.add_argument("--direction", required=True, choices=DIRECTIONS)
-    a.add_argument("--station", required=True)
-    a.add_argument("--stop", required=True)
+    a.add_argument("--station", default="", help="to-campus/home trips")
+    a.add_argument("--stop", default="", help="to-campus/home trips")
+    a.add_argument("--from", dest="start", help="any trips")
+    a.add_argument("--to", dest="end", help="any trips")
     a.add_argument("--walk", type=int, default=3)
     a.add_argument("--arrive-by")
     e = sub.add_parser("edit")
@@ -161,6 +197,8 @@ def main():
     e.add_argument("--direction", choices=DIRECTIONS)
     e.add_argument("--station")
     e.add_argument("--stop")
+    e.add_argument("--from", dest="start")
+    e.add_argument("--to", dest="end")
     e.add_argument("--walk", type=int)
     e.add_argument("--arrive-by", help='time like 9:00, or "none" to clear')
     d = sub.add_parser("delete")
@@ -185,7 +223,8 @@ def main():
         elif args.cmd == "add":
             if store.get(args.name):
                 raise ValueError(f"You already have a trip called {args.name!r}. Use edit to change it.")
-            trip = Trip(args.name, args.direction, args.station, args.stop, args.walk, args.arrive_by)
+            trip = Trip(args.name, args.direction, args.station, args.stop, args.walk, args.arrive_by,
+                        args.start, args.end)
             _, fr, uvx = load_today()
             validate(trip, fr, uvx)
             store.save(trip)
@@ -196,7 +235,7 @@ def main():
             if not trip:
                 raise ValueError(f"No trip called {args.name!r}")
             old_name = trip.name
-            for field in ("direction", "station", "stop", "walk"):
+            for field in ("direction", "station", "stop", "walk", "start", "end"):
                 if getattr(args, field) is not None:
                     setattr(trip, field, getattr(args, field))
             if args.new_name:

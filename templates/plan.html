@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Plan a trip{% endblock %}
+
+{% macro place_select(field, label, chosen) %}
+  <label for="{{ field }}">{{ label }}</label>
+  <select id="{{ field }}" name="{{ field }}" required>
+    <option value="">Choose a station or stop</option>
+    <optgroup label="FrontRunner stations">
+      {% for s in stations %}<option value="{{ s }}" {{ "selected" if s == chosen }}>{{ short(s) }}</option>{% endfor %}
+    </optgroup>
+    <optgroup label="UVX stops">
+      {% for s in stops %}<option value="{{ s }}" {{ "selected" if s == chosen }}>{{ short(s) }}</option>{% endfor %}
+    </optgroup>
+  </select>
+{% endmacro %}
+
+{% block body %}
+<header><a class="back" href="{{ url_for('home') }}">‹ My trips</a></header>
+<h1>Plan a trip</h1>
+<p class="note">This plans trips on FrontRunner and UVX only, since that's what this tool covers for now.</p>
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+<form method="get" class="card" id="plan">
+  {{ place_select("from", "Starting from", p.start) }}
+  {{ place_select("to", "Going to", p.end) }}
+
+  <fieldset>
+    <legend>When</legend>
+    <label class="choice"><input type="radio" name="when" value="now" {{ "checked" if p.when == "now" }}> Leave now</label>
+    <label class="choice"><input type="radio" name="when" value="leave" {{ "checked" if p.when == "leave" }}> Leave at</label>
+    <label class="choice"><input type="radio" name="when" value="arrive" {{ "checked" if p.when == "arrive" }}> Arrive by</label>
+    <label class="choice" id="time-row">Time <input type="time" name="time" value="{{ p.time }}"></label>
+  </fieldset>
+
+  <fieldset id="day-set">
+    <legend>Day</legend>
+    <label class="choice"><input type="radio" name="day" value="today" {{ "checked" if p.day == "today" }}> Today</label>
+    <label class="choice"><input type="radio" name="day" value="tomorrow" {{ "checked" if p.day == "tomorrow" }}> Tomorrow</label>
+    <label class="choice"><input type="radio" name="day" value="date" {{ "checked" if p.day == "date" }}> On
+      <input type="date" name="date" value="{{ p.date }}"></label>
+  </fieldset>
+
+  <div class="actions"><button class="btn" type="submit">Show my options</button></div>
+</form>
+
+<script>
+  // "Leave now" needs no time and is always today, so hide those choices while it's picked.
+  const form = document.getElementById("plan");
+  function sync() {
+    const now = form.when.value === "now";
+    document.getElementById("time-row").hidden = now;
+    document.getElementById("day-set").hidden = now;
+    form.time.required = !now;
+  }
+  form.addEventListener("change", sync);
+  // Typing a time or date picks the matching choice
+  form.date.addEventListener("input", () => { form.day.value = "date"; });
+  sync();
+</script>
+{% endblock %}

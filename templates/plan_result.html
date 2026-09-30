@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_option.html" import answer, rush, line, steps with context %}
+{% block title %}{{ short(p.start) }} to {{ short(p.end) }}{% endblock %}
+{% block body %}
+<header>
+  <a class="back" href="{{ url_for('home') }}">‹ My trips</a>
+  <a class="edit" href="{{ change_url }}">Change</a>
+</header>
+<h1>{{ short(p.start) }} to {{ short(p.end) }}</h1>
+<p class="summary">
+  {% if p.when == "now" %}Leave now
+  {% elif p.when == "leave" %}Leave at {{ fmt_time(p.time) }}
+  {% else %}Arrive by {{ fmt_time(p.time) }}{% endif %}
+  {% if p.when != "now" %}· {{ "today" if p.on == today else p.on.strftime("%A, %b ") ~ p.on.day }}{% endif %}
+</p>
+
+{# 1. The answer #}
+<section class="card now">
+  {% if r.gone %}
+    <p class="sentence">The last {{ r.gone.vehicle }} that gets you to {{ r.gone.dest }} by {{ fmt_time(p.time) }}
+      left {{ r.gone.start }} at {{ r.gone.time }}.</p>
+  {% elif r.rush %}
+    {{ rush(r.main, r.backup) }}
+  {% elif r.main %}
+    {% if r.note %}<p class="muted small">{{ r.note }}</p>{% endif %}
+    {{ answer(r.main, tomorrow=r.main.leave.date() != today, lead=r.lead, watch=p.when != "arrive") }}
+  {% else %}
+    <p>{{ r.note or "No trips found." }}</p>
+  {% endif %}
+</section>
+
+<a class="btn secondary small" href="{{ save_url }}">Save this trip</a>
+
+{# 2. Other options, one line each #}
+{% if r.others %}
+  <h2>{{ r.others_title }}</h2>
+  {% for o in r.others %}{{ line(o) }}{% endfor %}
+{% endif %}
+{% endblock %}

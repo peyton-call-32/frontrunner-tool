@@ -17,10 +17,10 @@
 <ol class="steps">
   {% for s in r.steps %}
     {% if s.walk %}
-      <li class="walk {{ 'tight' if r.transfer <= TIGHT }}">
+      <li class="walk {{ 'tight' if s.minutes <= TIGHT }}">
         <span class="t"></span>
-        <span>{% if r.transfer <= TIGHT %}⚠ {% endif %}{{ s.walk }}
-          ({% if r.transfer <= TIGHT %}only {% endif %}{{ r.transfer }} min {{ s.wait }})</span>
+        <span>{% if s.minutes <= TIGHT %}⚠ {% endif %}{{ s.walk }}
+          ({% if s.minutes <= TIGHT %}only {% endif %}{{ s.minutes }} min {{ s.wait }})</span>
       </li>
     {% else %}
       <li><span class="t">{{ s.time }}</span><span>{{ s.text }}</span></li>
