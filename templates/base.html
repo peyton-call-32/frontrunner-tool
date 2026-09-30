@@ -12,7 +12,7 @@
       /* Palette: blue #1565c0, red #c62828, white #ffffff, gray #999999, near-black #252525.
          Cards, lines and soft tints are light shades of these. */
       --bg: #ffffff; --card: #f4f4f4; --field: #ffffff; --text: #252525; --muted: #6e6e6e; --faint: #999999;
-      --line: #e5e5e5; --field-line: #cccccc; --shadow: none; --chip: #e9e9e9;
+      --line: #e5e5e5; --field-line: #cccccc; --box-line: #999999; --box-shadow: 0 2px 10px rgba(0,0,0,.14); --shadow: none; --chip: #e9e9e9;
       /* One accent, used sparingly: the main button and small highlights */
       --accent: #1565c0; --accent-soft: #e6eef9; --on-accent: #fff; --danger: #c62828;
       /* "leaving soon" and "tight transfer" are different warnings, so they get different colors */
@@ -22,7 +22,7 @@
     @media (prefers-color-scheme: dark) {
       :root {
         --bg: #1a1a1a; --card: #252525; --field: #333333; --text: #ffffff; --muted: #999999; --faint: #6e6e6e;
-        --line: #333333; --field-line: #4a4a4a; --shadow: none; --chip: #333333;
+        --line: #333333; --field-line: #4a4a4a; --box-line: #6e6e6e; --box-shadow: 0 2px 10px rgba(0,0,0,.5); --shadow: none; --chip: #333333;
         --accent: #5b9be6; --accent-soft: #16263b; --on-accent: #1a1a1a; --danger: #ef6b6b;
         --soon: #ef6b6b; --soon-soft: #3a1818; --on-soon: #1a1a1a;
         --tight: #f5b942; --tight-soft: #33270c;
@@ -36,6 +36,7 @@
     h1 { font-size: 30px; font-weight: 500; letter-spacing: -.01em; line-height: 1.2; margin: 0 0 28px; }
     header h1 { margin: 0; }
     h1.trip-name { font-weight: 600; }
+    h1.page-title { text-align: center; }
     h2 { font-size: 20px; font-weight: 500; letter-spacing: -.01em; margin: 40px 0 16px; }
     p { margin: 0 0 8px; }
     a { color: var(--text); }
@@ -52,12 +53,34 @@
     /* Trip name on home page cards: bigger, dark, normal case so it reads at a glance */
     a.card.now .top .label { font-size: 18px; font-weight: 600; color: var(--text); }
     /* My trips: each saved trip in its own filled, outlined card, with clear space between cards */
-    .card.box { background: var(--card); border: 1px solid var(--field-line); border-radius: 14px;
+    .card.box { background: var(--card); border: 1px solid var(--box-line); border-radius: 14px; box-shadow: var(--box-shadow);
       padding: 18px 20px; margin-bottom: 20px; }
-    .card.box + .card.box { border-top: 1px solid var(--field-line); }
+    .card.box + .card.box { border-top: 1px solid var(--box-line); }
     .card.box .backup { border-top-color: var(--field-line); }
-    a.card.box.now .top .label { font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+    a.card.box > .top .label, a.card.box > .rush > .top .label { font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+    /* Name row as a tinted header strip across the top of the card (not the "If you miss it" row inside) */
+    .card.box > .top, .card.box > .rush > .top { margin: -18px -20px 16px; padding: 12px 20px;
+      background: var(--accent-soft); border-bottom: 1px solid var(--box-line); border-radius: 13px 13px 0 0; }
     .route { font-size: 14px; color: var(--muted); margin: 4px 0 0; }
+
+    /* Trip page: each part (Next, If you miss it, Later today, Earlier today) in its own card, like My trips */
+    .panels .panel, .panels > .rush, .panels > .backup { display: block; background: var(--card); border: 1px solid var(--box-line);
+      border-radius: 14px; box-shadow: var(--box-shadow); padding: 18px 20px; margin: 0 0 20px; }
+    .panels .panel > .top, .panels > .rush > .top, .panels > .backup > .top { margin: -18px -20px 16px; padding: 12px 20px;
+      background: var(--accent-soft); border-bottom: 1px solid var(--box-line); border-radius: 13px 13px 0 0; }
+    .panels .top .label { font-size: 17px; font-weight: 700; color: var(--text); }
+    /* Leaving too soon: red header so the warning reads first */
+    .panels > .rush > .top { background: var(--soon-soft); }
+    .panels > .rush > .top .label { color: var(--soon); }
+    .panels > .rush details > summary { color: var(--muted); font-size: 15px; margin-top: 14px; }
+    /* Earlier today: just the header until opened */
+    .panels summary.top { list-style: none; cursor: pointer; }
+    .panels summary.top::-webkit-details-marker { display: none; }
+    .panels summary.top::after { content: "Show"; color: var(--accent); font-size: 15px; font-weight: 600; }
+    .panels details[open] > summary.top::after { content: "Hide"; }
+    .panels details.panel:not([open]) > summary.top { margin-bottom: -18px; border-bottom: 0; border-radius: 13px; }
+    .panels .chip { border-radius: 8px; background: var(--field); }
+    .panels .chip[aria-expanded="true"] { background: var(--accent-soft); }
 
     /* The answer: leave → arrive, big */
     .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
@@ -78,9 +101,6 @@
     .rush-note { color: var(--soon); font-weight: 700; font-size: 15px; margin: 12px 0 0; }
     .backup { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
     .label { font-size: 15px; font-weight: 400; color: var(--muted); margin: 0 0 6px; }
-
-    /* Tight transfer */
-    .tight-note { color: var(--tight); font-weight: 700; font-size: 15px; margin: 14px 0 0; }
 
     /* Route: a line of stops. Time on the left, a dot on a connecting line, station on the right */
     .stops { list-style: none; padding: 0; margin: 20px 0 0; font-size: 15px; }
@@ -131,6 +151,9 @@
       background: var(--accent); color: var(--on-accent); text-decoration: none; cursor: pointer; }
     .btn.small { padding: 8px 16px; font-size: 15px; }
     .btn.wide { display: block; text-align: center; margin-top: 32px; }
+    /* "Plan a trip" under the My trips cards: same rounded corners and shadow as the cards, still solid blue */
+    .btn.cta { border-radius: 14px; padding: 16px 20px; font-size: 17px; font-weight: 800; margin-top: 8px;
+      box-shadow: var(--box-shadow); }
     .btn.secondary { background: transparent; color: var(--text); border-color: var(--field-line); }
     .btn.danger { background: transparent; color: var(--danger); border-color: var(--field-line); }
     .saved { color: var(--accent); font-weight: 700; font-size: 15px; margin-bottom: 20px; }

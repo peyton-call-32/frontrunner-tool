@@ -8,30 +8,33 @@
 </header>
 <h1 class="trip-name">{{ trip.name }}</h1>
 
-{# 1. The answer #}
-<section class="card now">
+{# Each part in its own card with a header strip: Next (plus "If you miss it" when it's close), Later today, Earlier today #}
+<div class="panels">
   {% if v.rush %}
-    {{ rush(v.main, v.backup, v.backup_tomorrow) }}
+    {{ rush(v.main, v.backup, v.backup_tomorrow, title="Next") }}
   {% elif v.main %}
-    {{ answer(v.main, tomorrow=v.main_tomorrow) }}
-    {% if v.main_tomorrow %}<p class="muted small">The last one today has left.</p>{% endif %}
+    <section class="panel">
+      {{ answer(v.main, tomorrow=v.main_tomorrow, title=none if v.main_tomorrow else "Next") }}
+      {% if v.main_tomorrow %}<p class="muted small">The last one today has left.</p>{% endif %}
+    </section>
   {% else %}
-    <p>No options today or tomorrow.</p>
+    <section class="panel"><p>No options today or tomorrow.</p></section>
   {% endif %}
-</section>
 
-{# 2. Everything else today, as small buttons #}
-{% if v.later %}
-  <h2>Later today</h2>
-  {{ chips(v.later, "later", limit=4) }}
-{% endif %}
+  {% if v.later %}
+    <section class="panel">
+      <div class="top"><span class="label">Later today</span></div>
+      {{ chips(v.later, "later", limit=4) }}
+    </section>
+  {% endif %}
 
-{% if v.gone %}
-  <details class="earlier">
-    <summary>Earlier today ({{ v.gone|length }})</summary>
-    {{ chips(v.gone, "earlier") }}
-  </details>
-{% endif %}
+  {% if v.gone %}
+    <details class="panel">
+      <summary class="top"><span class="label">Earlier today ({{ v.gone|length }})</span></summary>
+      {{ chips(v.gone, "earlier") }}
+    </details>
+  {% endif %}
+</div>
 
 {# 3. Arrive-by: a small link at the bottom, closed unless used #}
 {% if trip.direction != "home" %}

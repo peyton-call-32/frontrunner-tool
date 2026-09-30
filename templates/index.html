@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_option.html" import answer, rush, top with context %}
 {% block body %}
-<h1>My trips</h1>
+<h1 class="page-title">My Trips</h1>
 
 {% if saved %}<div class="saved">Saved “{{ saved }}” to My trips.</div>{% endif %}
 
@@ -19,8 +19,6 @@
       {{ answer(v.main, tomorrow=v.main_tomorrow, with_steps=false, title=t.name, route=route) }}
       {% if v.main_tomorrow %}
         <p class="muted small">No more today.</p>
-      {% elif v.main.transfer is not none and v.main.transfer <= TIGHT %}
-        <p class="tight-note">⚠ Only {{ v.main.transfer }} min to transfer at {{ PROVO }}</p>
       {% endif %}
     {% else %}
       {{ top(t.name) }}
@@ -32,5 +30,5 @@
   <p class="muted">Plan a trip, then save the ones you take often.</p>
 {% endfor %}
 
-<a class="btn wide" href="{{ url_for('plan_trip') }}">Plan a trip</a>
+<a class="btn wide cta" href="{{ url_for('plan_trip') }}">Plan a Trip</a>
 {% endblock %}
