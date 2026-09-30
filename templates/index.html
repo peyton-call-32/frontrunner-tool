@@ -8,13 +8,16 @@
 {% for c in cards %}
   {% set t = c.trip %}
   {% set v = c.view %}
+  {# Just the two ends: "Murray Central → BYU South Campus" #}
+  {% set ends = [t.stop, t.station] if t.direction == "home" else ([t.start, t.end] if t.direction == "any" else [t.station, t.stop]) %}
+  {% set route = ends|map("replace", " Station", "")|join(" → ") %}
   {% if v %}
     {# A trip that makes sense right now: lead with the answer. The whole card opens the trip. #}
-    <a class="card now" href="{{ url_for('show_trip', name=t.name) }}">
+    <a class="card box now" href="{{ url_for('show_trip', name=t.name) }}">
       {% if v.rush %}
-        {{ rush(v.main, v.backup, v.backup_tomorrow, with_steps=false, title=t.name) }}
+        {{ rush(v.main, v.backup, v.backup_tomorrow, with_steps=false, title=t.name, route=route) }}
       {% elif v.main %}
-        {{ answer(v.main, tomorrow=v.main_tomorrow, with_steps=false, title=t.name) }}
+        {{ answer(v.main, tomorrow=v.main_tomorrow, with_steps=false, title=t.name, route=route) }}
         {% if v.main_tomorrow %}
           <p class="muted small">No more today.</p>
         {% elif v.main.transfer is not none and v.main.transfer <= TIGHT %}
@@ -22,13 +25,14 @@
         {% endif %}
       {% else %}
         {{ top(t.name) }}
+        <p class="route">{{ route }}</p>
         <p class="muted">No options today or tomorrow.</p>
       {% endif %}
     </a>
   {% else %}
     {# Wrong part of the day: just the name #}
-    <a class="card collapsed" href="{{ url_for('show_trip', name=t.name) }}">
-      <span>{{ t.name }}</span><span class="muted">›</span>
+    <a class="card box collapsed" href="{{ url_for('show_trip', name=t.name) }}">
+      <div><span class="name">{{ t.name }}</span><p class="route">{{ route }}</p></div><span class="muted">›</span>
     </a>
   {% endif %}
 {% else %}

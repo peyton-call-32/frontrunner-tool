@@ -53,7 +53,11 @@
     a.card.now { cursor: pointer; }
     /* Trip name on home page cards: bigger, dark, normal case so it reads at a glance */
     a.card.now .top .label { font-size: 18px; font-weight: 600; color: var(--text); }
-    a.card.collapsed > span:first-child { font-size: 18px; font-weight: 600; }
+    a.card.collapsed .name { font-size: 18px; font-weight: 600; }
+    /* My trips: each saved trip in its own light box */
+    .card.box { border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
+    .card.box + .card.box { border-top: 1px solid var(--line); }
+    .route { font-size: 14px; color: var(--muted); margin: 4px 0 0; }
 
     /* The answer: leave → arrive, big, each with a small label above */
     .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }

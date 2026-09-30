@@ -48,12 +48,13 @@
 
 {# Leave Murray Central     Arrive BYU South Campus
    10:16 AM             →  11:34 AM #}
-{% macro times(r) -%}
+{% macro times(r, route=none) -%}
   <div class="times">
     <div><p class="tl">Leave {{ r.start }}</p><p class="big">{{ hm(r.time) }}</p></div>
     <span class="arrow">→</span>
     <div><p class="tl">Arrive {{ r.dest }}</p><p class="big">{{ hm(r.arrive) }}</p></div>
   </div>
+  {% if route %}<p class="route">{{ route }}</p>{% endif %}
 {%- endmacro %}
 
 {# Small row above the times: a title on the left (trip name, "Tomorrow"...), the countdown on the right #}
@@ -68,19 +69,19 @@
 
 {# The main answer: countdown, big times, then the route (optional).
    lead is "Catch", "Tomorrow, catch" or "On Friday, Oct 2, catch"; anything but today shows as a day label. #}
-{% macro answer(r, tomorrow=false, with_steps=true, lead=none, watch=true, title=none) %}
+{% macro answer(r, tomorrow=false, with_steps=true, lead=none, watch=true, title=none, route=none) %}
 {% set lead = lead or ("Tomorrow, catch" if tomorrow else "Catch") %}
 {% set day = lead[:-7] if lead != "Catch" else none %}
 {{ top([title, day]|select|join(" · "), none if tomorrow else r, watch) }}
-{{ times(r) }}
+{{ times(r, route=route) }}
 {% if with_steps %}{{ timeline(r) }}{% endif %}
 {% endmacro %}
 
 {# Main answer that leaves too soon to count on: warning, then the backup right below. #}
-{% macro rush(r, backup, backup_tomorrow=false, with_steps=true, title=none) %}
+{% macro rush(r, backup, backup_tomorrow=false, with_steps=true, title=none, route=none) %}
 <div class="rush">
   {{ top(title) }}
-  {{ times(r) }}
+  {{ times(r, route=route) }}
   <p class="rush-note" data-t="{{ epoch_ms(r.leave) }}" data-rush>
     {{ rush_text(r.leave) }}
   </p>
