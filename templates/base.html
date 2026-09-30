@@ -76,7 +76,7 @@
     .tight-note { color: var(--tight); background: var(--tight-soft); font-weight: 600; font-size: 14px;
       padding: 8px 12px; border-radius: 10px; margin: 14px 0 0; }
 
-    /* Route timeline: one row per ride or walk, joined by a thin vertical line */
+    /* Route timeline: one row per ride or transfer, joined by a thin vertical line */
     .timeline { list-style: none; padding: 0; margin: 20px 0 0; font-size: 15px; }
     .timeline li { position: relative; display: flex; gap: 12px; align-items: flex-start; padding-bottom: 14px; }
     .timeline li:not(:last-child)::before { content: ""; position: absolute; left: 13px; top: 28px; bottom: 0;
@@ -88,8 +88,8 @@
     .timeline b { font-weight: 600; }
     .timeline .nb { white-space: nowrap; }
     .timeline .toward { color: var(--muted); }
-    .timeline li.walk { color: var(--muted); }
-    .timeline li.walk .icon { background: var(--chip); color: var(--muted); }
+    .timeline li.transfer { color: var(--muted); }
+    .timeline li.transfer .icon { background: var(--chip); color: var(--muted); }
     .timeline li.tight > span:last-child { color: var(--tight); font-weight: 600; }
     .timeline li.tight .icon { background: var(--tight-soft); color: var(--tight); }
     .total { font-size: 14px; color: var(--muted); margin: 0; }

@@ -68,9 +68,8 @@ def ride(mode, board_at, board, alight_at, alight, headsign):
                 start=board_at, time=fmt(board), end=alight_at, arrive=fmt(alight))
 
 
-def walk(leg_mode, minutes):
-    return dict(mode="walk", minutes=minutes,
-                to="the FrontRunner platform" if leg_mode == "train" else "the UVX stop")
+def transfer_leg(minutes):
+    return dict(mode="transfer", minutes=minutes)
 
 
 def to_campus_option(trip, day, train, bus):
@@ -80,7 +79,7 @@ def to_campus_option(trip, day, train, bus):
     return dict(
         leave=at(day, train[0]), time=fmt(train[0]), vehicle="train", start=home,
         dest=campus, arrive=fmt(bus[1]), total=mins(train[0], bus[1]), transfer=transfer,
-        legs=[ride("train", home, train[0], PROVO, train[1], train[2]), walk("bus", transfer),
+        legs=[ride("train", home, train[0], PROVO, train[1], train[2]), transfer_leg(transfer),
               ride("bus", PROVO, bus[0], campus, bus[1], bus[2])],
     )
 
@@ -92,7 +91,7 @@ def home_option(trip, day, bus, train):
     return dict(
         leave=at(day, bus[0]), time=fmt(bus[0]), vehicle="UVX", start=campus,
         dest=home, arrive=fmt(train[1]), total=mins(bus[0], train[1]), transfer=transfer,
-        legs=[ride("bus", campus, bus[0], PROVO, bus[1], bus[2]), walk("train", transfer),
+        legs=[ride("bus", campus, bus[0], PROVO, bus[1], bus[2]), transfer_leg(transfer),
               ride("train", PROVO, train[0], home, train[1], train[2])],
     )
 
@@ -104,7 +103,7 @@ def journey_option(journey, day):
     for i, leg in enumerate(journey):
         mode = "train" if leg["mode"] == TRAIN else "bus"
         if i:
-            legs.append(walk(mode, mins(journey[i - 1]["alight"], leg["board"])))
+            legs.append(transfer_leg(mins(journey[i - 1]["alight"], leg["board"])))
         legs.append(ride(mode, short(leg["board_at"]), leg["board"], short(leg["alight_at"]), leg["alight"],
                          leg["headsign"]))
     return dict(
