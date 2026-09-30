@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit trip" if existing else "Add trip" }}{% endblock %}
+{% block body %}
+<a class="back" href="{{ url_for('show_trip', name=existing.name) if existing else url_for('home') }}">‹ Back</a>
+<header><h1>{{ "Edit trip" if existing else "Add trip" }}</h1></header>
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+<form method="post" class="card">
+  <label for="name">Trip name</label>
+  <input id="name" name="name" value="{{ trip.name }}" placeholder="Morning to BYU" required>
+
+  <label for="direction">Direction</label>
+  <select id="direction" name="direction">
+    <option value="to-campus" {{ "selected" if trip.direction == "to-campus" }}>To campus (train, then UVX)</option>
+    <option value="home" {{ "selected" if trip.direction == "home" }}>Home (UVX, then train)</option>
+  </select>
+
+  <label for="station">FrontRunner station (near home)</label>
+  <select id="station" name="station" required>
+    <option value="">Choose a station</option>
+    {% for s in stations %}<option value="{{ s }}" {{ "selected" if s == trip.station }}>{{ short(s) }}</option>{% endfor %}
+  </select>
+
+  <label for="stop">UVX stop (at school)</label>
+  <select id="stop" name="stop" required>
+    <option value="">Choose a stop</option>
+    {% for s in stops %}<option value="{{ s }}" {{ "selected" if s == trip.stop }}>{{ short(s) }}</option>{% endfor %}
+  </select>
+
+  <label for="walk">Minutes to walk between train and bus at Provo Central</label>
+  <input id="walk" name="walk" type="number" min="0" max="30" value="{{ trip.walk }}">
+
+  <label for="arrive_by">Usual arrive-by time (optional, to-campus trips only)</label>
+  <input id="arrive_by" name="arrive_by" type="time" value="{{ trip.arrive_by or '' }}">
+
+  <div class="actions">
+    <button class="btn" type="submit">Save trip</button>
+  </div>
+</form>
+
+{% if existing %}
+  <form method="post" action="{{ url_for('delete_trip', name=existing.name) }}" style="margin-top:16px">
+    <button class="btn danger" type="submit">Delete this trip</button>
+  </form>
+{% endif %}
+{% endblock %}

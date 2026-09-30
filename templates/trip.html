@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "_option.html" import answer, rush, line, sentence, steps with context %}
+{% block title %}{{ trip.name }}{% endblock %}
+{% block body %}
+<header>
+  <a class="back" href="{{ url_for('home') }}">‹ My trips</a>
+  <a class="edit" href="{{ url_for('edit_trip', name=trip.name) }}">Edit</a>
+</header>
+<h1>{{ trip.name }}</h1>
+
+{# 1. The answer #}
+<section class="card now">
+  {% if v.rush %}
+    {{ rush(v.main, v.backup, v.backup_tomorrow) }}
+  {% elif v.main %}
+    {{ answer(v.main, tomorrow=v.main_tomorrow) }}
+    {% if v.main_tomorrow %}<p class="muted small">The last one today has left.</p>{% endif %}
+  {% else %}
+    <p>No options today or tomorrow.</p>
+  {% endif %}
+</section>
+
+{# 2. Arrive-by: secondary, so small and closed unless used #}
+{% if trip.direction == "to-campus" %}
+  <details class="arrive" {% if asked %}open{% endif %}>
+    <summary>{% if arrive and plan %}Arrive by {{ plan.target }}{% else %}Need to arrive by a set time?{% endif %}</summary>
+    <form class="inline" method="get">
+      <label for="arrive_by">Arrive by</label>
+      <input type="time" id="arrive_by" name="arrive_by" value="{{ arrive or '' }}" required>
+      <button class="btn small" type="submit">Find</button>
+    </form>
+    {% if plan %}
+      {% set o = plan.option %}
+      {% if not o %}
+        <p>No train today gets you to {{ short(trip.stop) }} by {{ plan.target }}.</p>
+      {% elif plan.gone %}
+        <p>The last train that gets you to {{ o.dest }} by {{ plan.target }} left {{ o.start }} at {{ o.time }}.</p>
+      {% else %}
+        <p>To be there by {{ plan.target }}, {{ sentence(o, lead="catch") }}</p>
+        <details><summary>Steps</summary>{{ steps(o) }}</details>
+      {% endif %}
+    {% endif %}
+  </details>
+{% endif %}
+
+{# 3. Everything else today, one line each #}
+{% if v.later %}
+  <h2>Later today</h2>
+  {% for r in v.later %}{{ line(r) }}{% endfor %}
+{% endif %}
+
+{% if v.gone %}
+  <details class="earlier">
+    <summary>Earlier today ({{ v.gone|length }})</summary>
+    {% for r in v.gone %}{{ line(r) }}{% endfor %}
+  </details>
+{% endif %}
+{% endblock %}

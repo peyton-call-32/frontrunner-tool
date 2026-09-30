@@ -57,8 +57,9 @@ class TripStore:
 
     def save(self, trip, replacing=None):
         """Add trip, or replace the trip named `replacing` (lets a trip be renamed)."""
-        key = (replacing or trip.name).lower()
-        trips = [t for t in self.all() if t.name.lower() != key]
+        trips = self.all()
+        if replacing:
+            trips = [t for t in trips if t.name.lower() != replacing.lower()]
         if any(t.name.lower() == trip.name.lower() for t in trips):
             raise ValueError(f"You already have a trip called {trip.name!r}")
         trips.append(trip)
@@ -76,6 +77,8 @@ class TripStore:
 
 def validate(trip, fr, uvx):
     """Check the trip against today's feed and fill in full stop names. Raises ValueError."""
+    if not trip.name.strip() or "/" in trip.name:
+        raise ValueError("Trip name can't be empty or contain /")
     if trip.direction not in DIRECTIONS:
         raise ValueError(f"Direction must be one of: {', '.join(DIRECTIONS)}")
     if trip.walk < 0:
@@ -104,11 +107,15 @@ def resolve(text, trips, kind):
     raise ValueError(f"{text!r} matches several {kind}s: {', '.join(matches)}")
 
 
-def load_today():
+def load_day(day):
     feed = load_feed()
+    t = load_trips(feed, active_services(feed, day), ["FrontRunner", "830X"])
+    return t["FrontRunner"], t["830X"]
+
+
+def load_today():
     today = date.today()
-    t = load_trips(feed, active_services(feed, today), ["FrontRunner", "830X"])
-    return today, t["FrontRunner"], t["830X"]
+    return (today, *load_day(today))
 
 
 def describe(t):

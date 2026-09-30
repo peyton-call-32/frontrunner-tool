@@ -105,15 +105,23 @@ def print_evening(plans, home=HOME, campus=CAMPUS, walk=WALK):
             print(f"  {'no UVX in time':>25}  {'':>6}  {fmt(train[0]):>12}  {fmt(train[1]):>13}  {train[2]}")
 
 
+def best_arrive_by(plans, deadline):
+    """Latest (train, bus) morning plan that reaches campus by deadline ('9:00' or '14:30'), or None."""
+    h, m = map(int, deadline.split(":"))
+    target = f"{h}:{m:02d}:00"
+    ok = [(t, b) for t, b in plans if b and seconds(b[1]) <= seconds(target)]
+    return max(ok, key=lambda p: seconds(p[0][0])) if ok else None
+
+
 def arrive_by(plans, deadline, home=HOME, campus=CAMPUS):
     """Print the latest train from home that gets to campus by deadline (e.g. '9:00' or '14:30')."""
     h, m = map(int, deadline.split(":"))
     target = f"{h}:{m:02d}:00"
-    ok = [(t, b) for t, b in plans if b and seconds(b[1]) <= seconds(target)]
-    if not ok:
+    best = best_arrive_by(plans, deadline)
+    if not best:
         print(f"No train from {short(home)} gets you to {short(campus)} by {fmt(target)} today.")
         return
-    train, bus = max(ok, key=lambda p: seconds(p[0][0]))
+    train, bus = best
     print(f"To be at {short(campus)} by {fmt(target)}:")
     print(f"  Catch the {fmt(train[0])} train at {short(home)}")
     print(f"  Arrive Provo Central {fmt(train[1])}, take the {fmt(bus[0])} UVX")

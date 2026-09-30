@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "_option.html" import answer, rush with context %}
+{% block body %}
+<header>
+  <h1>My trips</h1>
+  <a class="btn small" href="{{ url_for('new_trip') }}">+ Add</a>
+</header>
+
+{% for c in cards %}
+  {% set t = c.trip %}
+  {% set v = c.view %}
+  {% if v %}
+    {# A trip that makes sense right now: lead with the answer #}
+    <section class="card now">
+      <a class="trip-name" href="{{ url_for('show_trip', name=t.name) }}">{{ t.name }} ›</a>
+      {% if v.rush %}
+        {{ rush(v.main, v.backup, v.backup_tomorrow, with_steps=false) }}
+      {% elif v.main %}
+        {{ answer(v.main, tomorrow=v.main_tomorrow, with_steps=false) }}
+        {% if v.main_tomorrow %}
+          <p class="muted small">No more today.</p>
+        {% elif v.main.transfer <= TIGHT %}
+          <p class="tight-note">⚠ Only {{ v.main.transfer }} min to transfer at {{ PROVO }}</p>
+        {% endif %}
+      {% else %}
+        <p class="muted">No options today or tomorrow.</p>
+      {% endif %}
+      <a class="more" href="{{ url_for('show_trip', name=t.name) }}">Steps and later options ›</a>
+    </section>
+  {% else %}
+    {# Wrong part of the day: just the name #}
+    <a class="card collapsed" href="{{ url_for('show_trip', name=t.name) }}">
+      <span>{{ t.name }}</span><span class="muted">›</span>
+    </a>
+  {% endif %}
+{% else %}
+  <div class="card">
+    <p>No saved trips yet.</p>
+    <a class="btn" href="{{ url_for('new_trip') }}">Add your first trip</a>
+  </div>
+{% endfor %}
+{% endblock %}

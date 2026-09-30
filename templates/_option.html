@@ -1,0 +1,68 @@
+{# How one way to make a trip is written. `r` comes from app.to_campus_option / app.home_option. #}
+
+{# Countdown pill, e.g. "in 6 min". The page script keeps it current.
+   watch: reload when this option enters "you may not make it" range, so the page can offer a backup. #}
+{% macro pill(r, watch=false) -%}
+  <span class="pill {{ 'soon' if soon(r.leave) }}" data-t="{{ epoch_ms(r.leave) }}"
+    {%- if watch %} data-watch{% endif %}>{{ countdown(r.leave) }}</span>
+{%- endmacro %}
+
+{# "Catch the 8:46 AM train at Murray Central. You'll get to BYU South Campus at 10:06 AM." #}
+{% macro sentence(r, lead="Catch") -%}
+  {{ lead }} the <strong>{{ r.time }} {{ r.vehicle }}</strong> at {{ r.start }}.
+  You'll get to {{ r.dest }} at <strong>{{ r.arrive }}</strong>.
+{%- endmacro %}
+
+{% macro steps(r) %}
+<ol class="steps">
+  {% for s in r.steps %}
+    {% if s.walk %}
+      <li class="walk {{ 'tight' if r.transfer <= TIGHT }}">
+        <span class="t"></span>
+        <span>{% if r.transfer <= TIGHT %}⚠ {% endif %}{{ s.walk }}
+          ({% if r.transfer <= TIGHT %}only {% endif %}{{ r.transfer }} min {{ s.wait }})</span>
+      </li>
+    {% else %}
+      <li><span class="t">{{ s.time }}</span><span>{{ s.text }}</span></li>
+    {% endif %}
+  {% endfor %}
+</ol>
+<p class="muted small">{{ r.total }} min from {{ r.start }}</p>
+{% endmacro %}
+
+{# The main answer: sentence + countdown, then steps (optional). #}
+{% macro answer(r, tomorrow=false, with_steps=true, lead=none, watch=true) %}
+<div class="answer">
+  <p class="sentence">{{ sentence(r, lead or ("Tomorrow, catch" if tomorrow else "Catch")) }}</p>
+  {% if not tomorrow %}{{ pill(r, watch=watch) }}{% endif %}
+</div>
+{% if with_steps %}{{ steps(r) }}{% endif %}
+{% endmacro %}
+
+{# Main answer that leaves too soon to count on: warning, then the backup right below. #}
+{% macro rush(r, backup, backup_tomorrow=false, with_steps=true) %}
+<div class="rush">
+  <p class="sentence">{{ sentence(r) }}</p>
+  <p class="rush-note" data-t="{{ epoch_ms(r.leave) }}" data-rush>
+    {{ rush_text(r.leave) }}
+  </p>
+  {% if with_steps %}<details><summary>Steps</summary>{{ steps(r) }}</details>{% endif %}
+</div>
+{% if backup %}
+  <div class="backup">
+    <p class="label">If you miss it</p>
+    {{ answer(backup, tomorrow=backup_tomorrow, with_steps=with_steps, watch=false,
+              lead="Tomorrow, catch" if backup_tomorrow else "Catch") }}
+  </div>
+{% else %}
+  <p class="muted">That's the last one today.</p>
+{% endif %}
+{% endmacro %}
+
+{# "9:16 AM train → BYU South Campus at 10:34 AM", tap for steps #}
+{% macro line(r) %}
+<details class="line">
+  <summary>{{ r.time }} {{ r.vehicle }} → {{ r.dest }} at {{ r.arrive }}</summary>
+  {{ steps(r) }}
+</details>
+{% endmacro %}
