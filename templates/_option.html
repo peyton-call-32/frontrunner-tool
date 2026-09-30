@@ -18,7 +18,7 @@
 {% macro clock(t) %}{{ t.split(" ")[0] }}{% endmacro %}
 
 {# The route as a line of stops, each named once: time, dot, station, and what to ride from there.
-   Murray Central 10:16 (FrontRunner) · Provo Central 11:11 (Transfer to UVX bus at 11:17) · BYU South Campus 11:34 #}
+   Murray Central 10:16 (FrontRunner) · Provo Central 11:11 (Transfer to UVX bus / Bus leaves at 11:17 · 6 min to transfer) · BYU South Campus 11:34 #}
 {% macro stops(r) %}
 {% set rides = r.legs|rejectattr("mode", "eq", "transfer")|list %}
 <ol class="stops">
@@ -31,7 +31,8 @@
         <p class="stop">{{ l.start }}</p>
         {% if i %}
           {% set m = r.legs[i * 2 - 1].minutes %}
-          <p class="ride {{ 'tight' if m <= TIGHT }}">Transfer to {{ l.name }} at {{ clock(l.time) }} ({% if m <= TIGHT %}only {% endif %}{{ m }} min)</p>
+          <p class="ride">Transfer to {{ l.name }}</p>
+          <p class="ride {{ 'tight' if m <= TIGHT }}">{{ "Bus" if l.mode == "bus" else "Train" }} leaves at {{ clock(l.time) }} · {{ m }} min to transfer</p>
         {% else %}
           <p class="ride">{{ l.name }}</p>
         {% endif %}
