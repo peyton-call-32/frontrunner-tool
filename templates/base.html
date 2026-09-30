@@ -6,7 +6,7 @@
   <title>{% block title %}My trips{% endblock %} · FrontRunner Tool</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
       /* Palette: blue #1565c0, red #c62828, white #ffffff, gray #999999, near-black #252525.
@@ -51,9 +51,12 @@
     a.card.now { cursor: pointer; }
     /* Trip name on home page cards: bigger, dark, normal case so it reads at a glance */
     a.card.now .top .label { font-size: 18px; font-weight: 600; color: var(--text); }
-    /* My trips: each saved trip in its own light box */
-    .card.box { border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
-    .card.box + .card.box { border-top: 1px solid var(--line); }
+    /* My trips: each saved trip in its own filled, outlined card, with clear space between cards */
+    .card.box { background: var(--card); border: 1px solid var(--field-line); border-radius: 14px;
+      padding: 18px 20px; margin-bottom: 20px; }
+    .card.box + .card.box { border-top: 1px solid var(--field-line); }
+    .card.box .backup { border-top-color: var(--field-line); }
+    a.card.box.now .top .label { font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
     .route { font-size: 14px; color: var(--muted); margin: 4px 0 0; }
 
     /* The answer: leave → arrive, big */
