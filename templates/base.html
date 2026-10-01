@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}My trips{% endblock %} · Catch</title>
+  <title>{% block title %}My Trips{% endblock %} · Catch</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -174,16 +174,10 @@
     .top { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); margin-bottom: 14px; }
     .top .label { margin: 0; }
     .label { font-size: 15px; font-weight: 600; color: var(--muted); margin: 0 0 6px; }
-    /* On My trips the title is the trip's name */
+    /* On My Trips the title is the trip's name */
     a.card .top .label { font-size: 23px; font-weight: 700; color: var(--text); letter-spacing: -.025em; }
     a.card .backup .top .label { font-size: 15px; font-weight: 600; color: var(--muted); }
 
-    /* Earlier today: just the header until opened */
-    .panels summary.top { list-style: none; cursor: pointer; margin: 0; }
-    .panels summary.top::-webkit-details-marker { display: none; }
-    .panels summary.top::after { content: "Show"; color: var(--accent); font-size: 15px; font-weight: 600; }
-    .panels details[open] > summary.top { margin-bottom: var(--s2); }
-    .panels details[open] > summary.top::after { content: "Hide"; }
 
     /* ============================================================ Times */
     .times { display: flex; align-items: baseline; gap: 10px; }
@@ -246,7 +240,6 @@
     .trip-card.compact .pill { display: none; }
     .trip-card.compact .foot { margin-top: var(--s3); padding-top: 10px; }
     .trip-card .none { margin: var(--s2) 0 0; }
-    .after-route { margin: var(--s4) 0 0; padding-top: var(--s3); border-top: 1px solid var(--line); }
 
     /* ============================================================ Morning / Evening / Anytime */
     .seg { display: flex; gap: var(--s1); padding: var(--s1); border-radius: var(--radius-sm); background: var(--inset); box-shadow: inset 0 0 0 1px var(--line); }
@@ -323,7 +316,6 @@
       background: none; border: 0; border-top: 1px solid var(--line); padding: 10px 0 0; cursor: pointer; transition: color var(--quick); }
     .show-all:hover { color: var(--accent-hover); }
     .panels .panel:has(.chips) { padding-bottom: var(--s2); }
-    .panels details.panel:not([open]) { padding-bottom: var(--s5); }
 
     /* ============================================================ One-line options, tap to expand */
     details.line { background: var(--card); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm);

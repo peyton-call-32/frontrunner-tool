@@ -1,4 +1,4 @@
-"""Catch website: My trips on your phone.
+"""Catch website: My Trips on your phone.
 
 Run:  .venv/bin/python app.py          → open http://localhost:8080 on this computer
       .venv/bin/python app.py --phone  → also reachable from your phone on the same Wi-Fi
@@ -144,13 +144,12 @@ def upcoming(trip, now, count):
 
 
 def trip_view(trip, now, count=2):
-    """What to show for a trip right now: the next departure, the ones after it, whether the next one
-    is about to leave, and (for the trip page) today's departures that are already gone."""
+    """What to show for a trip right now: the next departure, the ones after it, and whether the next one
+    is about to leave."""
     ahead = upcoming(trip, now, count)
     main = ahead[0] if ahead else None
     return dict(main=main, backup=ahead[1] if len(ahead) > 1 else None, next=ahead[1:],
-                rush=bool(main) and main["leave"] - now < timedelta(minutes=RUSH),
-                gone=[r for r in options(trip, feed_for(now.date())) if r["leave"] < now and in_usual_time(trip, r)])
+                rush=bool(main) and main["leave"] - now < timedelta(minutes=RUSH))
 
 
 def day_label(leave, now):
@@ -164,7 +163,8 @@ def day_label(leave, now):
 
 
 def top_group(now):
-    """Which usual time goes on top of My trips: morning trips until noon, evening trips from noon until midnight."""
+    """Which usual time goes on top of My Trips: morning trips until noon, evening trips from noon on
+    (home() moves morning trips back up once the evening trips are done for the day)."""
     return "evening" if now.hour >= 12 else "morning"
 
 
@@ -228,12 +228,17 @@ def get_trip(name):
 @app.route("/")
 def home():
     now = current_time()
+    views = [(t, trip_view(t, now)) for t in TripStore(USER).all()]
     top = top_group(now)
+    # Once the evening trips' last departures have left for the day, tomorrow morning's trips come up next
+    if top == "evening" and not any(t.usual == "evening" and v["main"] and v["main"]["leave"].date() == now.date()
+                                    for t, v in views):
+        top = "morning"
     # On top: trips whose usual time is now. Then anytime trips, then the rest. sorted() is stable,
     # so trips in the same group stay in the order they were added.
     rank = {top: 0, "anytime": 1}
-    trips = sorted(TripStore(USER).all(), key=lambda t: rank.get(t.usual, 2))
-    cards = [dict(trip=t, big=t.usual == top, view=trip_view(t, now)) for t in trips]
+    views.sort(key=lambda tv: rank.get(tv[0].usual, 2))
+    cards = [dict(trip=t, big=t.usual == top, view=v) for t, v in views]
     # The Up next trip's rides, so the map banner can draw that route a little bolder
     up = next((c["view"]["main"] for c in cards if c["big"] and c["view"]["main"]), None)
     rides = [dict(mode=l["mode"], start=l["start"], end=l["end"]) for l in up["legs"] if l["mode"] != "transfer"] if up else []
@@ -372,7 +377,7 @@ def plan_trip():
 
 @app.route("/plan/save", methods=["GET", "POST"])
 def save_plan():
-    """"Save to My trips" from planner results: just ask for a name, then go home."""
+    """"Save to My Trips" from planner results: just ask for a name, then go home."""
     src = request.form if request.method == "POST" else request.args
     start, end = src.get("start", ""), src.get("end", "")
     trip = Trip(src.get("name", f"{short(start)} to {short(end)}").strip(), "any", "", "",

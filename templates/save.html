@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% from "_usual.html" import usual_field %}
-{% block title %}Save to My trips{% endblock %}
+{% block title %}Save to My Trips{% endblock %}
 {% block body %}
 <header><a class="back" href="{{ back }}">‹ Back</a></header>
-<h1>Save to My trips</h1>
+<h1>Save to My Trips</h1>
 <p class="summary">{{ short(trip.start) }} to {{ short(trip.end) }}{% if trip.arrive_by %}, arrive by {{ fmt_time(trip.arrive_by) }}{% endif %}</p>
 
 {% if error %}<div class="error">{{ error }}</div>{% endif %}

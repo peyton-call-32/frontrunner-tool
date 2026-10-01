@@ -3,7 +3,7 @@
 {% block title %}{{ short(p.start) }} to {{ short(p.end) }}{% endblock %}
 {% block body %}
 <header>
-  <a class="back" href="{{ url_for('home') }}">‹ My trips</a>
+  <a class="back" href="{{ url_for('home') }}">‹ My Trips</a>
   <a class="edit" href="{{ change_url }}">Change</a>
 </header>
 <h1>{{ short(p.start) }} to {{ short(p.end) }}</h1>
@@ -29,7 +29,7 @@
   {% endif %}
 </section>
 
-<a class="btn secondary wide" href="{{ save_url }}">Save to My trips</a>
+<a class="btn secondary wide" href="{{ save_url }}">Save to My Trips</a>
 
 {# 2. Other options, one line each #}
 {% if r.others %}
