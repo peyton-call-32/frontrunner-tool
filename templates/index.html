@@ -1,13 +1,15 @@
 {% extends "base.html" %}
 {% from "_option.html" import pill, hm, foot, route_of with context %}
+{% from "_map.html" import map_backdrop %}
 {% block body %}
+{{ map_backdrop(rides) }}
 <p class="eyebrow">{{ today_label }}</p>
 <h1 class="page-title">My Trips</h1>
 
 {% if saved %}<div class="saved">Saved “{{ saved }}” to My trips.</div>{% endif %}
 
 {# Trips whose usual time is now get the big card; every other trip gets the compact one.
-   Both always show the real next departure, whatever the trip's usual time. #}
+   Both show the next departure in the trip's usual time of day (morning trips before noon, evening from noon). #}
 {% for c in cards %}
   {% set t, v, r = c.trip, c.view, c.view.main %}
   <a class="card trip-card {{ 'big' if c.big else 'compact' }}" href="{{ url_for('show_trip', name=t.name, **keep_at) }}">
@@ -29,14 +31,17 @@
       {% if v.rush %}
         <p class="rush-note" data-t="{{ epoch_ms(r.leave) }}" data-rush>{{ rush_text(r.leave) }}</p>
       {% endif %}
-      <div class="miss">
-        <span>If you miss it</span>
-        {% if v.backup %}
-          <b>{% if day_label(v.backup.leave) %}{{ day_label(v.backup.leave) }} · {% endif %}{{ v.backup.time }} → {{ v.backup.arrive }}</b>
-        {% else %}
-          <b>Nothing else this week</b>
-        {% endif %}
-      </div>
+      {# The last one of its day says so, instead of offering a backup on another day #}
+      {% if v.backup and v.backup.leave.date() == r.leave.date() %}
+        <div class="miss">
+          <span>If you miss it</span>
+          <b>{{ v.backup.time }} → {{ v.backup.arrive }}</b>
+        </div>
+      {% else %}
+        <div class="miss last">
+          <span>Last {{ "train" if r.vehicle == "train" else "bus" }} {{ "today" if not day_label(r.leave) else "that day" }}</span>
+        </div>
+      {% endif %}
       {{ foot(r) }}
     {% else %}
       <p class="line-times">{{ r.time }} → {{ r.arrive }}</p>

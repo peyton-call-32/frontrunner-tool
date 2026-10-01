@@ -8,6 +8,6 @@
       <label><input type="radio" name="usual" value="{{ v }}" {{ "checked" if v == (value or "anytime") }}>{{ label }}</label>
     {% endfor %}
   </div>
-  <p class="hint">Morning trips go to the top of My trips before noon and after 8 PM, evening trips from noon to 8 PM.</p>
+  <p class="hint">Morning trips go to the top of My trips before noon, evening trips from noon until midnight.</p>
 </fieldset>
 {% endmacro %}

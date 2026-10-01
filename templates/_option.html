@@ -10,7 +10,7 @@
   {%- if day -%}
   <span class="pill day"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>{{ day }}</span>
   {%- else -%}
-  <span class="pill {{ 'soon' if soon(r.leave) }}" data-t="{{ epoch_ms(r.leave) }}" data-what="{{ what }}"
+  <span class="pill {{ 'late' if late(r.leave) else 'soon' if soon(r.leave) }}" data-t="{{ epoch_ms(r.leave) }}" data-what="{{ what }}"
     {%- if watch %} data-watch{% endif %}{% if refresh %} data-refresh{% endif %}>{{ what }} {{ countdown(r.leave) }}</span>
   {%- endif -%}
 {%- endmacro %}
@@ -93,7 +93,8 @@
 {% if with_steps %}{{ stops(r) }}{% endif %}
 {% endmacro %}
 
-{# Main answer that leaves too soon to count on: warning, then the backup right below. #}
+{# Main answer that leaves too soon to count on: warning, then the backup right below.
+   When the backup is on a later day, this is the last one that day, so it says that instead of "If you miss it". #}
 {% macro rush(r, backup, backup_tomorrow=false, with_steps=true, title=none, route=none) %}
 <div class="rush">
   {{ top(title) }}
@@ -104,9 +105,10 @@
   {% if with_steps %}<details><summary>Route</summary>{{ stops(r) }}</details>{% endif %}
 </div>
 {% if backup %}
+  {% set later = backup.leave.date() != r.leave.date() %}
   <div class="backup">
     {{ answer(backup, tomorrow=backup_tomorrow, with_steps=with_steps, watch=false, lead="Catch",
-              title="If you miss it" ~ (" · tomorrow" if backup_tomorrow else "")) }}
+              title="Last one today, next one" if later else "If you miss it") }}
   </div>
 {% else %}
   <p class="muted">That's the last one today.</p>
@@ -144,7 +146,8 @@
 </svg>
 {%- endmacro %}
 
-{# Bottom of a My trips card: bus › train icons on the left, "1 h 23 min · 1 transfer" on the right #}
+{# Bottom of a My trips card: bus › train icons on the left, "1 h 23 min · 1 transfer" and an arrow on the right,
+   so it's clear the card opens the trip #}
 {% macro foot(r) %}
 {% set rides = r.legs|rejectattr("mode", "eq", "transfer")|list %}
 {% set n = rides|length - 1 %}
@@ -152,7 +155,8 @@
   <span class="modes" aria-label="{{ rides|map(attribute='name')|join(', then ') }}">
     {% for l in rides %}{% if not loop.first %}<span class="sep">›</span>{% endif %}{{ icon(l.mode) }}{% endfor %}
   </span>
-  <span>{{ duration(r.total) }} · {{ "Direct" if n == 0 else n ~ (" transfer" if n == 1 else " transfers") }}</span>
+  <span class="foot-end">{{ duration(r.total) }} · {{ "Direct" if n == 0 else n ~ (" transfer" if n == 1 else " transfers") }}
+    <span class="go" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span></span>
 </div>
 {% endmacro %}
 

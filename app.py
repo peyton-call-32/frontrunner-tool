@@ -20,7 +20,8 @@ from trips import DIRECTIONS, USUAL, Trip, TripStore, load_day, validate
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True  # page changes show up on the next reload
 USER = "me"  # one user for now; becomes the logged-in student once the site has accounts
-SOON = 10    # countdowns this many minutes or less get highlighted
+SOON = 10    # countdowns this many minutes or less turn amber
+LATE = 2     # ...and red under this many, when you're about to miss it
 RUSH = 5     # an option leaving in fewer minutes than this is "you may not make it"
 LOOK_AHEAD = 7  # days to search for the next departure (FrontRunner skips Sundays and holidays)
 
@@ -120,12 +121,23 @@ def options(trip, feed):
     return [home_option(trip, day, bus, train) for bus, train in plans if bus]
 
 
+def in_usual_time(trip, r):
+    """Morning trips only leave before noon and evening trips from noon on, so in the evening "Morning to BYU"
+    shows tomorrow morning's train, not tonight's. Anytime trips take any departure."""
+    if trip.usual == "morning":
+        return r["leave"].hour < 12
+    if trip.usual == "evening":
+        return r["leave"].hour >= 12
+    return True
+
+
 def upcoming(trip, now, count):
-    """The next `count` departures from now. When today runs out it keeps going into the next days
-    (Sunday, a holiday), up to LOOK_AHEAD days, so there's always a real next departure to show."""
+    """The next `count` departures from now, within the trip's usual time of day. When today runs out it keeps
+    going into the next days (Sunday, a holiday), up to LOOK_AHEAD days, so there's always a real next departure."""
     found = []
     for i in range(LOOK_AHEAD + 1):
-        found += [r for r in options(trip, feed_for(now.date() + timedelta(days=i))) if r["leave"] >= now]
+        found += [r for r in options(trip, feed_for(now.date() + timedelta(days=i)))
+                  if r["leave"] >= now and in_usual_time(trip, r)]
         if len(found) >= count:
             break
     return found[:count]
@@ -138,7 +150,7 @@ def trip_view(trip, now, count=2):
     main = ahead[0] if ahead else None
     return dict(main=main, backup=ahead[1] if len(ahead) > 1 else None, next=ahead[1:],
                 rush=bool(main) and main["leave"] - now < timedelta(minutes=RUSH),
-                gone=[r for r in options(trip, feed_for(now.date())) if r["leave"] < now])
+                gone=[r for r in options(trip, feed_for(now.date())) if r["leave"] < now and in_usual_time(trip, r)])
 
 
 def day_label(leave, now):
@@ -152,9 +164,8 @@ def day_label(leave, now):
 
 
 def top_group(now):
-    """Which usual time goes on top of My trips: morning trips until noon, evening trips from noon to 8 PM,
-    then morning trips again (for tomorrow morning)."""
-    return "evening" if 12 <= now.hour < 20 else "morning"
+    """Which usual time goes on top of My trips: morning trips until noon, evening trips from noon until midnight."""
+    return "evening" if now.hour >= 12 else "morning"
 
 
 def current_time():
@@ -197,11 +208,12 @@ def helpers():
     now = current_time()
     return dict(day_label=lambda leave: day_label(leave, now),
                 keep_at={"at": g.pretend} if g.get("pretend") else {},
-                short=short, PROVO=PROVO, today_label=now.strftime("%A, %B ") + str(now.day), SOON=SOON, RUSH=RUSH, duration=duration,
+                short=short, PROVO=PROVO, today_label=now.strftime("%A, %B ") + str(now.day), SOON=SOON, LATE=LATE, RUSH=RUSH, duration=duration,
                 countdown=lambda leave: countdown(leave, now),
                 rush_text=lambda leave: rush_text(leave, now),
                 fmt_time=lambda hhmm: fmt(f"{hhmm}:00"),
                 soon=lambda leave: (leave - now).total_seconds() <= SOON * 60,
+                late=lambda leave: (leave - now).total_seconds() < LATE * 60,
                 epoch_ms=lambda leave: int(leave.timestamp() * 1000),
                 server_ms=lambda: int(now.timestamp() * 1000))
 
@@ -222,7 +234,10 @@ def home():
     rank = {top: 0, "anytime": 1}
     trips = sorted(TripStore(USER).all(), key=lambda t: rank.get(t.usual, 2))
     cards = [dict(trip=t, big=t.usual == top, view=trip_view(t, now)) for t in trips]
-    return render_template("index.html", cards=cards, saved=request.args.get("saved"))
+    # The Up next trip's rides, so the map banner can draw that route a little bolder
+    up = next((c["view"]["main"] for c in cards if c["big"] and c["view"]["main"]), None)
+    rides = [dict(mode=l["mode"], start=l["start"], end=l["end"]) for l in up["legs"] if l["mode"] != "transfer"] if up else []
+    return render_template("index.html", cards=cards, rides=rides, saved=request.args.get("saved"))
 
 
 @app.route("/trip/<name>")

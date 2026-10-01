@@ -1,0 +1,175 @@
+{# Decorative transit map behind everything on My Trips, drawn like a rail system map: north up, straight
+   lines at 45°, white station dots, soft lakes and mountains. Trains and buses move along the lines.
+   `rides` is the Up next trip's rides, [{mode, start, end}], drawn a little bolder. #}
+{% macro map_backdrop(rides) %}
+<div class="map-bg" aria-hidden="true">
+  <svg viewBox="0 0 200 300" preserveAspectRatio="xMidYMin meet" data-rides='{{ rides|tojson }}'></svg>
+</div>
+<script>
+(() => {
+  // The diagram, in a 200 × 300 box. Lines as corner points; stations sit on them.
+  const LINES = {
+    train: [[100,30],[100,100],[88,112],[88,185],[122,219],[122,250],[140,268]],  // FrontRunner, Salt Lake → Provo
+    bus:   [[140,268],[160,268],[170,258],[170,229],[160,219],[122,219]],         // UVX, Provo → BYU → UVU → Orem
+  };
+  // [x, y, label side]
+  const STATIONS = {
+    "Salt Lake Central": [100,30,"r"], "Murray Central": [100,88,"l"], "South Jordan": [88,125,"l"], "Draper": [88,150,"l"],
+    "Lehi": [88,180,"l"], "American Fork": [100,197,"l"], "Vineyard": [111,208,"l"], "Orem Central": [122,219,"l"],
+    "Provo Central": [140,268,"b"], "BYU South Campus": [170,250,"l"], "Utah Valley University": [140,219,"t"],
+  };
+  // Lakes and mountains: soft rounded shapes that run off the edges, so they fill wide screens too
+  const AREAS = [
+    ["lake", "Great Salt Lake", [22,52], [[-220,-120],[78,-120],[80,-20],[74,20],[60,50],[36,66],[0,72],[-220,78]]],
+    ["hill", "Oquirrh Mountains", [26,148], [[-220,100],[10,96],[44,104],[60,130],[66,165],[56,195],[30,206],[-220,200]]],
+    ["hill", "Wasatch Mountains", [168,96], [[120,-120],[420,-120],[420,250],[200,240],[180,212],[150,190],[128,160],[116,120],[110,80],[112,30]]],
+    ["lake", "Utah Lake", [56,268], [[-220,228],[30,214],[70,218],[98,236],[110,258],[112,290],[100,330],[60,360],[-220,380]]],
+  ];
+
+  // Where the trains and buses are. Pretend for now: each rides its line end to end and back.
+  // Positions are a fraction along the line (0 = first point, 1 = last). To go live, swap in a source with the
+  // same at(time) → [{mode, f}], fed through our server by UTA's GTFS-realtime vehicle positions, each snapped
+  // to its route shape (shapes.txt) and converted to a fraction between the stations it's running between.
+  const pretend = {
+    fleet: [{ mode: "train", minutes: 6, offset: 0 }, { mode: "train", minutes: 6, offset: .55 },
+            { mode: "bus", minutes: 2.5, offset: .2 }, { mode: "bus", minutes: 2.5, offset: .7 }],
+    at(t) {
+      return this.fleet.map(v => {
+        const p = (t / (v.minutes * 60000) + v.offset) % 2;
+        return { mode: v.mode, f: p < 1 ? p : 2 - p };
+      });
+    },
+  };
+  const vehicles = pretend;
+
+  // --- Geometry ---
+  const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  const lengths = line => line.slice(1).reduce((acc, p, i) => [...acc, acc[i] + dist(line[i], p)], [0]);
+  function pointAt(line, f) {
+    const L = lengths(line), s = f * L[L.length - 1];
+    let i = 1; while (i < L.length - 1 && L[i] < s) i++;
+    const u = (s - L[i - 1]) / ((L[i] - L[i - 1]) || 1), a = line[i - 1], b = line[i];
+    return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u];
+  }
+  // How far along the line a station sits
+  function along(line, q) {
+    const L = lengths(line); let best = [Infinity, 0];
+    for (let i = 1; i < line.length; i++) {
+      const a = line[i - 1], b = line[i], dx = b[0] - a[0], dy = b[1] - a[1];
+      const u = Math.max(0, Math.min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / (dx * dx + dy * dy || 1)));
+      const d = Math.hypot(a[0] + dx * u - q[0], a[1] + dy * u - q[1]);
+      if (d < best[0]) best = [d, L[i - 1] + u * (L[i] - L[i - 1])];
+    }
+    return best[1];
+  }
+  // The stretch of line between two distances along it
+  function slice(line, s0, s1) {
+    if (s0 > s1) [s0, s1] = [s1, s0];
+    const L = lengths(line), total = L[L.length - 1];
+    return [pointAt(line, s0 / total), ...line.filter((p, i) => L[i] > s0 && L[i] < s1), pointAt(line, s1 / total)];
+  }
+
+  // --- Drawing ---
+  const svg = document.currentScript.previousElementSibling.querySelector("svg");
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, parent = svg) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return parent.appendChild(e);
+  };
+  const path = pts => pts.map((p, i) => (i ? "L" : "M") + p.join(" ")).join("");
+  // A closed shape through the points with smooth, rounded edges (Catmull-Rom curves)
+  function blob(pts) {
+    const n = pts.length, at = i => pts[(i + n) % n];
+    let d = "M" + pts[0].join(" ");
+    for (let i = 0; i < n; i++) {
+      const [p0, p1, p2, p3] = [at(i - 1), at(i), at(i + 1), at(i + 2)];
+      d += `C${p1[0] + (p2[0] - p0[0]) / 6} ${p1[1] + (p2[1] - p0[1]) / 6} ${p2[0] - (p3[0] - p1[0]) / 6} ${p2[1] - (p3[1] - p1[1]) / 6} ${p2[0]} ${p2[1]}`;
+    }
+    return d + "Z";
+  }
+  // Same outlines as the trip cards' bus and train icons
+  const GLYPH = {
+    train: '<rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 10h14M9 21l-2-4M15 21l2-4"/>',
+    bus: '<path d="M4 17V6a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v11z"/><path d="M4 11h16"/><circle cx="7.5" cy="19.5" r="1.5"/><circle cx="16.5" cy="19.5" r="1.5"/>',
+  };
+
+  for (const [kind, name, [x, y], poly] of AREAS) {
+    el("path", { d: blob(poly), class: kind });
+    const t = el("text", { x, y, class: "area" });
+    name.toUpperCase().split(" ").forEach((w, i) => el("tspan", { x, dy: i ? 7 : 0 }, t).textContent = w);
+  }
+  for (const mode in LINES) el("path", { d: path(LINES[mode]), class: "line" });
+  // The Up next trip's rides, on top and a bit bolder
+  for (const r of JSON.parse(svg.dataset.rides || "[]")) {
+    const line = LINES[r.mode], a = STATIONS[r.start], b = STATIONS[r.end];
+    if (line && a && b) el("path", { d: path(slice(line, along(line, a), along(line, b))), class: "line next" });
+  }
+  const side = { l: [-4.5, 1.3, "end"], r: [4.5, 1.3, "start"], t: [0, -4.5, "middle"], b: [0, 7.5, "middle"] };
+  for (const name in STATIONS) {
+    const [x, y, s] = STATIONS[name], [dx, dy, anchor] = side[s];
+    el("circle", { cx: x, cy: y, r: 2.2, class: "stn" });
+    el("text", { x: x + dx, y: y + dy, "text-anchor": anchor, class: "name" }).textContent = name;
+  }
+  const icons = vehicles.at(0).map(v => {
+    const g = el("g", { class: "veh" });
+    el("circle", { r: 3.6 }, g);
+    el("g", { transform: "translate(-2.3 -2.3) scale(.19)" }, g).innerHTML = GLYPH[v.mode];
+    return g;
+  });
+  function move(t) {
+    vehicles.at(t).forEach((v, i) => {
+      if (!icons[i]) return;
+      const [x, y] = pointAt(LINES[v.mode], v.f);
+      icons[i].setAttribute("transform", `translate(${x.toFixed(2)} ${y.toFixed(2)})`);
+    });
+    tuck(icons);
+  }
+
+  // Labels and icons that would peek out from under or right beside a card, button or the heading fade out,
+  // so only whole, clear ones show. Lines and station dots can still pass under the cards.
+  // Text blocks are measured by their words, not their full-width box
+  const textBox = e => { const r = document.createRange(); r.selectNodeContents(e); return r.getBoundingClientRect(); };
+  const solid = () => [...[...document.querySelectorAll("main .card, main .btn, main .saved")].map(e => e.getBoundingClientRect()),
+    ...[...document.querySelectorAll("main h1, main .eyebrow")].map(textBox)];
+  const near = (a, b, m = 14) => a.left < b.right + m && a.right > b.left - m && a.top < b.bottom + m && a.bottom > b.top - m;
+  function tuck(els) {
+    const blocks = solid();
+    for (const e of els) {
+      const r = e.getBoundingClientRect();
+      const cut = r.left < 2 || r.right > innerWidth - 2;  // running off the side of the screen
+      e.classList.toggle("tucked", cut || blocks.some(b => near(r, b)));
+    }
+  }
+  const labels = () => [...svg.querySelectorAll(".name, .area")];
+  let tuckFrame = 0;
+  const tuckAll = () => { tuck(labels()); tuck(icons); };
+  const retuck = () => { if (!tuckFrame) tuckFrame = requestAnimationFrame(() => { tuckFrame = 0; tuckAll(); }); };
+  addEventListener("scroll", retuck, { passive: true });
+  addEventListener("resize", retuck);
+  move(Date.now());
+  // Tall screens (phones): fill the whole height and trim the sides. Wide screens: show it all.
+  const fit = () => svg.setAttribute("preserveAspectRatio", "xMidYMin " + (svg.clientHeight / svg.clientWidth > 1.2 ? "slice" : "meet"));
+  fit();
+  addEventListener("resize", fit);
+  // The cards come after this script, so check once the page has loaded, and again once they've risen into place
+  addEventListener("DOMContentLoaded", tuckAll);
+  addEventListener("load", tuckAll);
+  setTimeout(tuckAll, 700);
+
+  // --- Animation: slow, about 15 frames a second, paused while the page is hidden ---
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let frame = 0, last = 0;
+  function tick(t) {
+    frame = 0;
+    if (t - last > 66) { last = t; move(Date.now()); }
+    play();
+  }
+  function play() { if (!still && !frame && !document.hidden) frame = requestAnimationFrame(tick); }
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) { cancelAnimationFrame(frame); frame = 0; } else play();
+  });
+  play();
+})();
+</script>
+{% endmacro %}

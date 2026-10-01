@@ -6,311 +6,399 @@
   <title>{% block title %}My trips{% endblock %} · Catch</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23E6F4F1'/%3E%3Ccircle cx='16' cy='16' r='8' fill='%230F766E'/%3E%3C/svg%3E">
   <style>
+    /* ============================================================
+       Design tokens: every color, font, size, space, shadow and corner on the site comes from here.
+       ============================================================ */
     :root {
-      /* Warm off-white page, white cards, teal accent */
-      --bg: #F7F7F5; --glow-1: #F7F7F5; --glow-2: #F7F7F5; --glow-3: #F7F7F5;
-      --card: #FFFFFF; --card-solid: #FFFFFF; --field: #FFFFFF; --inset: #E6F4F1;
-      --text: #111827; --muted: #6B7280; --faint: #9CA3AF;
-      --line: #E5E7EB; --border: #E5E7EB; --field-line: #D1D5DB; --rim: rgba(255,255,255,.95);
-      /* Layered shadow: a hairline, a contact shadow, then a soft drop far below */
-      --shadow: 0 0 0 1px var(--border), 0 1px 2px rgba(17,24,39,.05), 0 10px 24px -8px rgba(17,24,39,.08),
-        0 32px 64px -32px rgba(17,24,39,.14), inset 0 1px 0 var(--rim);
-      --shadow-hover: 0 0 0 1px rgba(15,118,110,.18), 0 2px 4px rgba(17,24,39,.05), 0 16px 32px -10px rgba(17,24,39,.12),
-        0 44px 80px -36px rgba(17,24,39,.18), inset 0 1px 0 var(--rim);
-      --accent: #0F766E; --accent-hover: #115E59; --ice: #99D5CC; --accent-soft: #E6F4F1; --on-accent: #FFFFFF;
-      --btn-top: #0F766E; --btn-bottom: #0F766E; --danger: #C62828;
-      /* "leaving soon" warning */
-      --soon: #B42318; --soon-soft: #FEEEEC;
-      /* Corners: three sizes only. Cards 9px, buttons/fields/inner boxes 6px, badges/icon boxes 4px */
-      --radius: 9px; --radius-sm: 6px; --radius-xs: 4px;
-      --display: "Bricolage Grotesque", "Instrument Sans", sans-serif;
+      /* Surfaces */
+      --bg: #F6F9FC; --card: #FFFFFF; --field: #FFFFFF; --header: #FFFFFF;
+      --inset: #F6F9FC;               /* quiet boxes inside cards: "If you miss it", transfers, toggles */
+      /* Text */
+      --text: #0A2540; --muted: #425466; --faint: #8898AA; --placeholder: #64748B;
+      /* Lines */
+      --line: #E3E8EE; --border: rgba(10,37,64,.07); --field-line: #D5DBE3; --field-hover: #B8C2CC;
+      /* The one accent: countdowns, main buttons, Up next, the route. Used sparingly. */
+      --accent: #0F766E; --accent-hover: #0B5F58; --accent-soft: #E6F4F1; --accent-line: rgba(15,118,110,.16);
+      --accent-ring: rgba(15,118,110,.14); --accent-glow: rgba(15,118,110,.22); --on-accent: #FFFFFF;
+      --route-fade: #99D5CC;
+      /* Warnings: amber under 10 minutes, red when you're about to miss it */
+      --warn: #B45309; --warn-soft: #FEF3E2; --warn-line: rgba(180,83,9,.16);
+      --soon: #B42318; --soon-soft: #FEEEEC; --soon-line: rgba(180,35,24,.16);
+      --danger: #C62828;
+      /* Hero wash behind the top of each page: blue, teal and a touch of purple */
+      --wash-1: rgba(94,234,212,.30); --wash-2: rgba(125,180,255,.30); --wash-3: rgba(167,139,250,.22);
+      /* Map background (My Trips) */
+      --map-lake: #E2F0F3; --map-hill: #ECEFF3; --map-label: #8898AA; --map-opacity: .5;
+
+      /* Type */
+      --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --display: var(--font);
+      --tight: -.022em; --tighter: -.035em;
+
+      /* Space: a 4px scale */
+      --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s7: 28px; --s8: 32px;
+
+      /* Corners */
+      --radius: 12px; --radius-sm: 8px; --radius-xs: 6px; --pill: 999px;
+
+      /* Shadows: a hairline, then soft layered drops so cards float */
+      --shadow-sm: 0 0 0 1px var(--border), 0 1px 2px rgba(10,37,64,.04), 0 2px 5px -1px rgba(50,50,93,.08);
+      --shadow: 0 0 0 1px var(--border), 0 3px 6px -2px rgba(50,50,93,.1), 0 12px 24px -8px rgba(50,50,93,.16),
+        0 26px 48px -20px rgba(10,37,64,.18);
+      --shadow-hover: 0 0 0 1px rgba(10,37,64,.08), 0 6px 12px -4px rgba(50,50,93,.14), 0 20px 40px -10px rgba(50,50,93,.24),
+        0 40px 70px -24px rgba(10,37,64,.24);
+      /* Up next card: a higher, teal-tinted float */
+      --shadow-lift: 0 0 0 1px var(--border), 0 6px 12px -4px rgba(15,118,110,.15), 0 22px 44px -12px rgba(15,118,110,.24),
+        0 40px 76px -26px rgba(50,50,93,.22);
+      --shadow-lift-hover: 0 0 0 1px rgba(15,118,110,.2), 0 8px 16px -6px rgba(15,118,110,.18), 0 28px 54px -12px rgba(15,118,110,.3),
+        0 50px 90px -28px rgba(50,50,93,.28);
+      --shadow-btn: 0 1px 2px rgba(10,37,64,.1), 0 4px 12px -4px rgba(15,118,110,.45);
+      --shadow-btn-hover: 0 2px 4px rgba(10,37,64,.1), 0 10px 20px -6px rgba(15,118,110,.5);
+
+      /* Motion */
+      --ease: cubic-bezier(.2,.8,.2,1); --quick: .2s;
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #07111C; --glow-1: #0E2A48; --glow-2: #0A1E33; --glow-3: #10304F;
-        --card: rgba(20,36,56,.62); --card-solid: #122235; --field: #0F1D2D; --inset: rgba(30,56,86,.55);
-        --text: #EAF3FC; --muted: #9DB2C7; --faint: #5E7690;
-        --line: rgba(160,200,240,.1); --border: rgba(160,200,240,.1); --field-line: #2A4058; --rim: rgba(255,255,255,.06);
-        --shadow: 0 0 0 1px var(--border), 0 12px 32px -12px rgba(0,0,0,.6), inset 0 1px 0 var(--rim);
-        --shadow-hover: 0 0 0 1px rgba(45,212,191,.3), 0 18px 40px -12px rgba(0,0,0,.7), inset 0 1px 0 var(--rim);
-        --accent: #2DD4BF; --accent-hover: #5EEAD4; --ice: #2DD4BF; --accent-soft: rgba(45,212,191,.14); --on-accent: #042F2E;
-        --btn-top: #2DD4BF; --btn-bottom: #2DD4BF; --danger: #F97066;
-        --soon: #FF8A7A; --soon-soft: rgba(255,120,100,.14);
+        --bg: #071526; --card: #0F2138; --field: #0C1C30; --header: #071526; --inset: #132841;
+        --text: #F2F6FA; --muted: #A8B6C6; --faint: #6B7F95; --placeholder: #8A9BB0;
+        --line: rgba(170,195,225,.12); --border: rgba(170,195,225,.1); --field-line: #2A3F58; --field-hover: #3A5270;
+        --accent: #2DD4BF; --accent-hover: #5EEAD4; --accent-soft: rgba(45,212,191,.13); --accent-line: rgba(45,212,191,.22);
+        --accent-ring: rgba(45,212,191,.2); --accent-glow: rgba(45,212,191,.28); --on-accent: #04241F; --route-fade: #1F6F66;
+        --warn: #FBBF24; --warn-soft: rgba(251,191,36,.13); --warn-line: rgba(251,191,36,.22);
+        --soon: #FF8A7A; --soon-soft: rgba(255,120,100,.14); --soon-line: rgba(255,120,100,.24);
+        --danger: #F97066;
+        --wash-1: rgba(45,212,191,.12); --wash-2: rgba(80,140,255,.14); --wash-3: rgba(140,110,250,.12);
+        --map-lake: rgba(45,212,191,.07); --map-hill: rgba(255,255,255,.035); --map-label: #6B7F95;
+        --shadow-sm: 0 0 0 1px var(--border), 0 2px 6px -2px rgba(0,0,0,.5);
+        --shadow: 0 0 0 1px var(--border), 0 12px 28px -12px rgba(0,0,0,.6);
+        --shadow-hover: 0 0 0 1px rgba(170,195,225,.18), 0 18px 40px -12px rgba(0,0,0,.7);
+        --shadow-lift: 0 0 0 1px rgba(45,212,191,.18), 0 20px 44px -14px rgba(0,0,0,.7);
+        --shadow-lift-hover: 0 0 0 1px rgba(45,212,191,.3), 0 26px 52px -14px rgba(0,0,0,.75);
+        --shadow-btn: 0 1px 2px rgba(0,0,0,.4), 0 6px 16px -6px rgba(45,212,191,.4);
+        --shadow-btn-hover: 0 2px 4px rgba(0,0,0,.4), 0 10px 22px -6px rgba(45,212,191,.5);
       }
     }
+
+    /* ============================================================ Base */
     * { box-sizing: border-box; }
     [hidden] { display: none !important; }
     html { background: var(--bg); }
     body { margin: 0; min-height: 100vh; background: transparent; color: var(--text); -webkit-font-smoothing: antialiased;
-      font: 16px/1.45 "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; position: relative; }
-    /* Frosty light behind everything: soft blue glows that drift slowly */
-    body::before { content: ""; position: fixed; inset: -20%; z-index: -1; pointer-events: none;
+      -moz-osx-font-smoothing: grayscale; font: 16px/1.5 var(--font); font-feature-settings: "cv11"; position: relative; }
+    /* Hero wash: soft blue, teal and purple light behind the top of the page, fading out as it goes down */
+    body::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 620px; z-index: -1; pointer-events: none;
       background:
-        radial-gradient(40% 35% at 15% 10%, var(--glow-1), transparent 70%),
-        radial-gradient(35% 30% at 90% 25%, var(--glow-3), transparent 70%),
-        radial-gradient(45% 40% at 60% 95%, var(--glow-2), transparent 70%);
-      animation: drift 28s ease-in-out infinite alternate; }
-    @keyframes drift { to { transform: translate3d(3%, -2%, 0) rotate(4deg) scale(1.05); } }
-    a { color: var(--accent); }
+        radial-gradient(42% 70% at 12% 0%, var(--wash-1), transparent 70%),
+        radial-gradient(40% 65% at 55% 0%, var(--wash-2), transparent 70%),
+        radial-gradient(38% 60% at 92% 8%, var(--wash-3), transparent 70%);
+      -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent);
+      mask-image: linear-gradient(to bottom, #000 30%, transparent); }
+    a { color: var(--accent); transition: color var(--quick); }
     a:hover { color: var(--accent-hover); }
 
-    /* Top bar: frosted glass that stays put while you scroll */
-    .bar { position: sticky; top: 0; z-index: 10; background: #FFFFFF;
-      -webkit-backdrop-filter: blur(18px) saturate(180%); backdrop-filter: blur(18px) saturate(180%);
-      border-bottom: 1px solid var(--line); }
-    @media (prefers-color-scheme: dark) { .bar { background: rgba(7,17,28,.55); } }
-    .bar-in { max-width: 560px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; }
-    .brand { display: flex; align-items: center; gap: 10px; padding: 10px 0; font-family: var(--display); font-weight: 800;
-      font-size: 25px; letter-spacing: -.045em; color: var(--text); text-decoration: none; }
+    /* ============================================================ Top bar */
+    .bar { position: sticky; top: 0; z-index: 10; background: var(--header); border-bottom: 1px solid var(--line); }
+    .bar-in { max-width: 560px; margin: 0 auto; padding: 0 var(--s5); display: flex; align-items: center; justify-content: space-between; }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 14px 0; font-family: var(--display); font-weight: 700;
+      font-size: 20px; letter-spacing: var(--tighter); color: var(--text); text-decoration: none; }
     .brand:hover { color: var(--text); }
     /* Signal light: a teal dot with a slow pulse */
-    .signal { position: relative; width: 12px; height: 12px; border-radius: 50%; background: #0F766E;
-      box-shadow: 0 0 0 4px var(--accent-soft), 0 0 14px rgba(15,118,110,.55); }
-    .signal::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid #0F766E;
+    .signal { position: relative; width: 10px; height: 10px; border-radius: 50%; background: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft); }
+    .signal::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--accent);
       animation: ping 2.4s cubic-bezier(0,0,.2,1) infinite; }
     @keyframes ping { 0% { transform: scale(1); opacity: .7; } 80%, 100% { transform: scale(2.6); opacity: 0; } }
 
-    main { max-width: 560px; margin: 0 auto; padding: 28px 20px 64px; }
-    main > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -8px 0 16px; }
-    .eyebrow { font-size: 15px; font-weight: 500; color: var(--muted); margin: 0; }
-    h1 { font-family: var(--display); font-size: 36px; font-weight: 700; letter-spacing: -.035em; line-height: 1.1; margin: 0 0 24px; }
+    /* ============================================================ Page and headings */
+    main { max-width: 560px; margin: 0 auto; padding: var(--s7) var(--s5) 64px; }
+    main > header { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); margin: -8px 0 var(--s4); }
+    .eyebrow { font-size: 14px; font-weight: 500; color: var(--muted); margin: 0; }
+    h1 { font-family: var(--display); font-size: 34px; font-weight: 700; letter-spacing: var(--tighter); line-height: 1.1; margin: 0 0 var(--s6);
+      color: var(--text); }
     h1.page-title { margin-top: 0; }
     .eyebrow + h1.page-title { margin-top: 2px; }
     h1.trip-name { margin-bottom: 6px; }
-    .subtitle { color: var(--muted); font-size: 15px; margin: 0 0 24px; }
-    h2 { font-family: var(--display); font-size: 22px; font-weight: 700; letter-spacing: -.03em; margin: 32px 0 12px; }
-    p { margin: 0 0 8px; }
-    .back, .edit { display: inline-flex; align-items: center; gap: 4px; text-decoration: none; font-size: 15px; padding: 10px 0; }
+    .subtitle { color: var(--muted); font-size: 15px; margin: 0 0 var(--s6); }
+    h2 { font-family: var(--display); font-size: 20px; font-weight: 700; letter-spacing: var(--tight); margin: var(--s8) 0 var(--s3); color: var(--text); }
+    p { margin: 0 0 var(--s2); }
+    .back, .edit { display: inline-flex; align-items: center; gap: var(--s1); text-decoration: none; font-size: 15px; padding: 10px 0; }
     .back { color: var(--muted); font-weight: 500; }
-    .back svg { transition: transform .2s; }
+    .back svg { transition: transform var(--quick) var(--ease); }
     .back:hover { color: var(--text); }
     .back:hover svg { transform: translateX(-3px); }
     .edit { font-weight: 600; }
     .muted { color: var(--muted); }
     .small { font-size: 14px; }
 
-    /* Every card: frosted glass, lit from above, floating on a soft shadow */
+    /* ============================================================ Map background (My Trips) */
+    /* A rail-map style diagram fixed behind the page, under the trip cards, faded so the cards lead */
+    .map-bg { position: fixed; inset: 56px 0 0; z-index: -2; pointer-events: none; opacity: var(--map-opacity); }
+    .map-bg svg { display: block; width: 100%; height: 100%; overflow: visible; }
+    .map-bg .lake { fill: var(--map-lake); }
+    .map-bg .hill { fill: var(--map-hill); }
+    .map-bg .area { font-size: 4.2px; font-weight: 700; letter-spacing: .25em; fill: var(--map-label); text-anchor: middle; }
+    .map-bg .line { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; opacity: .4; }
+    .map-bg .line.next { stroke-width: 3; opacity: .9; }
+    .map-bg .stn { fill: var(--card); stroke: var(--map-label); stroke-width: .9; }
+    .map-bg .name { font-size: 4.2px; font-weight: 600; fill: var(--muted); }
+    .map-bg .veh > circle { fill: var(--card); stroke: var(--accent); stroke-width: .7; }
+    .map-bg .veh g { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+    /* Labels and icons that would peek out around a card fade away (the map script sets .tucked) */
+    .map-bg .area, .map-bg .name, .map-bg .veh { transition: opacity .3s ease; }
+    .map-bg .tucked { opacity: 0; }
+    @media (max-width: 599px) { .map-bg .area { display: none; } }
+
+    /* ============================================================ Cards */
     .card, .panels .panel, .panels > .rush, .panels > .backup {
       display: block; background: var(--card); border: 0; border-radius: var(--radius); box-shadow: var(--shadow);
-      -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%);
-      padding: 20px; margin: 0 0 16px; color: var(--text); text-decoration: none; }
-    a.card { transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s; }
-    a.card:hover { color: var(--text); transform: translateY(-3px); box-shadow: var(--shadow-hover); }
-    a.card:active { transform: translateY(-1px) scale(.995); }
-    /* The next trip gets a brighter, icier glass so it reads as the main thing on the page */
-    .panels > .panel:first-child, .panels > .rush {
-      background: var(--card-solid); }
-    @media (prefers-color-scheme: dark) {
-      .panels > .panel:first-child, .panels > .rush { background: linear-gradient(165deg, rgba(30,56,86,.75), rgba(16,32,52,.7)); }
-    }
+      padding: var(--s5); margin: 0 0 var(--s4); color: var(--text); text-decoration: none; }
+    /* Hover: the card lifts, grows a touch and casts a deeper shadow. Pressing settles it back down. */
+    a.card { transition: transform .28s cubic-bezier(.34,1.4,.64,1), box-shadow .28s var(--ease); }
+    a.card:hover { color: var(--text); transform: translateY(-2px) scale(1.003); box-shadow: var(--shadow-hover); }
+    a.card:active { transform: translateY(-1px) scale(.997); transition-duration: .1s; }
+    /* The next trip on a trip page gets the higher float */
+    .panels > .panel:first-child, .panels > .rush { box-shadow: var(--shadow-lift); }
     /* Cards drift up into place on load, one after another */
-    .card, .panels > * { animation: rise .6s cubic-bezier(.2,.8,.2,1) both; }
-    .card:nth-of-type(2), .panels > :nth-child(2) { animation-delay: .07s; }
-    .card:nth-of-type(3), .panels > :nth-child(3) { animation-delay: .14s; }
-    .card:nth-of-type(n+4), .panels > :nth-child(n+4) { animation-delay: .2s; }
-    @keyframes rise { from { opacity: 0; transform: translateY(12px); } }
-    .route { font-size: 14px; color: var(--muted); margin: 4px 0 0; }
+    .card, .panels > * { animation: rise .4s var(--ease) both; }
+    .card:nth-of-type(2), .panels > :nth-child(2) { animation-delay: .06s; }
+    .card:nth-of-type(3), .panels > :nth-child(3) { animation-delay: .12s; }
+    .card:nth-of-type(n+4), .panels > :nth-child(n+4) { animation-delay: .18s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+    .route { font-size: 14px; color: var(--muted); margin: var(--s1) 0 0; }
 
     /* Row above the times: title on the left, countdown on the right */
-    .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    .top { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); margin-bottom: 14px; }
     .top .label { margin: 0; }
     .label { font-size: 15px; font-weight: 600; color: var(--muted); margin: 0 0 6px; }
     /* On My trips the title is the trip's name */
-    a.card .top .label { font-size: 19px; font-weight: 600; color: var(--text); letter-spacing: -.01em; }
+    a.card .top .label { font-size: 23px; font-weight: 700; color: var(--text); letter-spacing: -.025em; }
     a.card .backup .top .label { font-size: 15px; font-weight: 600; color: var(--muted); }
 
     /* Earlier today: just the header until opened */
     .panels summary.top { list-style: none; cursor: pointer; margin: 0; }
     .panels summary.top::-webkit-details-marker { display: none; }
     .panels summary.top::after { content: "Show"; color: var(--accent); font-size: 15px; font-weight: 600; }
-    .panels details[open] > summary.top { margin-bottom: 8px; }
+    .panels details[open] > summary.top { margin-bottom: var(--s2); }
     .panels details[open] > summary.top::after { content: "Hide"; }
 
-    /* The answer: leave → arrive, big */
+    /* ============================================================ Times */
     .times { display: flex; align-items: baseline; gap: 10px; }
-    .times .big { font-family: var(--display); font-size: 32px; font-weight: 700; letter-spacing: -.035em; line-height: 1.1; margin: 0;
-      font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .times .big { font-family: var(--display); font-size: 32px; font-weight: 700; letter-spacing: -.04em; line-height: 1.1; margin: 0;
+      font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--text); }
     .panels .times .big { font-size: 44px; }
-    .times .ampm { font-family: "Instrument Sans", sans-serif; font-size: 15px; font-weight: 600; color: var(--muted); margin-left: 3px; letter-spacing: 0; }
+    .times .ampm { font-family: var(--display); font-size: 15px; font-weight: 600; color: var(--muted); margin-left: 3px; letter-spacing: 0; }
     .panels .times .ampm { font-size: 17px; }
-    .times .arrow { color: var(--faint); font-size: 22px; transition: transform .25s, color .25s; }
+    .times .arrow { color: var(--faint); font-size: 22px; transition: transform var(--quick) var(--ease), color var(--quick); }
     a.card:hover .times .arrow { transform: translateX(4px); color: var(--accent); }
     .sentence { font-size: 18px; line-height: 1.4; margin: 0; }
-    /* Countdown: a live dot that pulses, blue normally, red when it's close */
-    .pill { flex: none; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600;
+
+    /* ============================================================ Countdown pill */
+    /* A live dot that pulses. Teal normally, amber under 10 min, red under 2 min */
+    .pill { flex: none; display: inline-flex; align-items: center; gap: var(--s2); font-size: 14px; font-weight: 600;
       font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--accent); background: var(--accent-soft);
-      padding: 6px 12px 6px 10px; border-radius: var(--radius-xs); box-shadow: inset 0 0 0 1px rgba(15,118,110,.14); }
+      padding: 5px 12px 5px 10px; border-radius: var(--pill); box-shadow: inset 0 0 0 1px var(--accent-line);
+      transition: color .3s, background .3s, box-shadow .3s; }
     .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor;
       box-shadow: 0 0 0 0 currentColor; animation: live 2s ease-out infinite; }
-    @keyframes live { 0% { box-shadow: 0 0 0 0 rgba(15,118,110,.45); } 100% { box-shadow: 0 0 0 7px rgba(15,118,110,0); } }
-    .pill.soon { color: var(--soon); background: var(--soon-soft); box-shadow: inset 0 0 0 1px rgba(180,35,24,.14); }
-    .pill.soon::before { animation-name: live-soon; animation-duration: 1.2s; }
-    @keyframes live-soon { 0% { box-shadow: 0 0 0 0 rgba(180,35,24,.45); } 100% { box-shadow: 0 0 0 7px rgba(180,35,24,0); } }
-
+    @keyframes live { 0% { box-shadow: 0 0 0 0 var(--accent-glow); } 100% { box-shadow: 0 0 0 7px transparent; } }
+    .pill.soon { color: var(--warn); background: var(--warn-soft); box-shadow: inset 0 0 0 1px var(--warn-line); }
+    .pill.soon::before { animation-name: live-warn; animation-duration: 1.6s; }
+    @keyframes live-warn { 0% { box-shadow: 0 0 0 0 var(--warn-line); } 100% { box-shadow: 0 0 0 7px transparent; } }
+    .pill.late { color: var(--soon); background: var(--soon-soft); box-shadow: inset 0 0 0 1px var(--soon-line); }
+    .pill.late::before { animation-name: live-soon; animation-duration: 1.2s; }
+    @keyframes live-soon { 0% { box-shadow: 0 0 0 0 var(--soon-line); } 100% { box-shadow: 0 0 0 7px transparent; } }
     /* A departure on a later day: the day instead of a countdown, no live dot */
     .pill.day { color: var(--muted); background: var(--inset); box-shadow: inset 0 0 0 1px var(--line); gap: 6px; }
     .pill.day::before { display: none; }
 
-    /* My trips, big card: "If you miss it" as one quiet row under the route */
-    .miss { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 14px;
-      padding: 10px 12px; border-radius: var(--radius-sm); background: var(--inset); box-shadow: inset 0 0 0 1px var(--line);
+    /* ============================================================ My Trips cards */
+    /* Big card: "If you miss it" as one quiet row under the route */
+    .miss { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); margin-top: 14px;
+      padding: 10px var(--s3); border-radius: var(--radius-sm); background: var(--inset); box-shadow: inset 0 0 0 1px var(--line);
       font-size: 14px; color: var(--muted); }
     .miss b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
-    /* My trips, featured card: plain white, lifted a little higher than the rest, "Up next" above the name */
-    .trip-card.big { background: var(--card-solid);
-      box-shadow: var(--shadow), 0 18px 40px -14px rgba(17,24,39,.15); }
-    .trip-card.big:hover { box-shadow: var(--shadow-hover), 0 22px 48px -14px rgba(17,24,39,.18); }
-    .up-next { display: block; margin: 0 0 4px; font-size: 12px; font-weight: 700; letter-spacing: .08em;
+    /* Last one of the day: the same row, in amber so it's noticed */
+    .miss.last { color: var(--warn); background: var(--warn-soft); box-shadow: inset 0 0 0 1px var(--warn-line); font-weight: 600; }
+    /* Featured card: white, floating higher than the rest, "Up next" above the name */
+    .trip-card.big { background: var(--card); box-shadow: var(--shadow-lift); }
+    .trip-card.big:hover { box-shadow: var(--shadow-lift-hover); }
+    .up-next { display: block; margin: 0 0 var(--s1); font-size: 11px; font-weight: 700; letter-spacing: .08em;
       text-transform: uppercase; color: var(--accent); }
     .trip-card.big .times .big { font-size: 40px; }
     .trip-card.big .times .ampm { font-size: 16px; }
-    /* My trips, compact card: same parts, smaller */
-    .trip-card.compact { padding: 16px 20px; }
+    /* Compact card: same parts, smaller */
+    .trip-card.compact { padding: var(--s4) var(--s5); }
     .trip-card.compact .top { margin-bottom: 6px; }
-    a.card.compact .top .label { font-size: 17px; }
-    .line-times { font-family: var(--display); font-size: 21px; font-weight: 600; letter-spacing: -.02em; margin: 0;
+    a.card.compact .top .label { font-size: 21px; }
+    /* Phones: a touch smaller so a name fits beside the countdown */
+    @media (max-width: 420px) {
+      a.card .top .label, a.card.compact .top .label { font-size: 20px; }
+      a.card .top .pill { font-size: 13px; padding: 4px 10px 4px 9px; gap: 6px; }
+    }
+    .line-times { font-family: var(--display); font-size: 20px; font-weight: 600; letter-spacing: -.03em; margin: 0;
       font-variant-numeric: tabular-nums; }
     /* Quieter than the featured card: softer times, no countdown (still in the page so its timer reloads) */
     .trip-card.compact .line-times { color: var(--muted); }
     .trip-card.compact .pill { display: none; }
-    .trip-card.compact .foot { margin-top: 12px; padding-top: 10px; }
-    .trip-card .none { margin: 8px 0 0; }
-    .after-route { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid var(--line); }
+    .trip-card.compact .foot { margin-top: var(--s3); padding-top: 10px; }
+    .trip-card .none { margin: var(--s2) 0 0; }
+    .after-route { margin: var(--s4) 0 0; padding-top: var(--s3); border-top: 1px solid var(--line); }
 
-    /* Morning / Evening / Anytime: one segmented control */
-    .seg { display: flex; gap: 4px; padding: 4px; border-radius: var(--radius-sm); background: var(--inset); box-shadow: inset 0 0 0 1px var(--line); }
-    .seg label { flex: 1; margin: 0; padding: 10px 8px; min-height: 44px; display: flex; align-items: center; justify-content: center;
-      border-radius: var(--radius-xs); font-weight: 600; font-size: 15px; color: var(--muted); cursor: pointer; transition: background .2s, color .2s, box-shadow .2s; }
+    /* ============================================================ Morning / Evening / Anytime */
+    .seg { display: flex; gap: var(--s1); padding: var(--s1); border-radius: var(--radius-sm); background: var(--inset); box-shadow: inset 0 0 0 1px var(--line); }
+    .seg label { flex: 1; margin: 0; padding: 10px var(--s2); min-height: 44px; display: flex; align-items: center; justify-content: center;
+      border-radius: var(--radius-xs); font-weight: 600; font-size: 15px; color: var(--muted); cursor: pointer;
+      transition: background var(--quick), color var(--quick), box-shadow var(--quick); }
     .seg input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
     .seg label:hover { color: var(--text); }
-    .seg label:has(input:checked) { background: var(--card-solid); color: var(--accent);
-      box-shadow: 0 1px 2px rgba(17,24,39,.1), 0 4px 10px -4px rgba(17,24,39,.12); }
-    .seg label:has(input:focus-visible) { outline: 2px solid #0F766E; outline-offset: 2px; }
-    .hint { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+    .seg label:has(input:checked) { background: var(--card); color: var(--text); box-shadow: var(--shadow-sm); }
+    .seg label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .hint { font-size: 13px; color: var(--muted); margin: var(--s2) 0 0; }
     fieldset.usual { margin-top: 18px; }
 
-    /* Leaving too soon: warning + backup */
+    /* ============================================================ Leaving too soon: warning + backup */
     .rush .times .big { font-size: 24px; color: var(--muted); }
     .panels .rush .times .big { font-size: 28px; }
     .panels > .rush > .top .label { color: var(--soon); }
-    .rush-note { color: var(--soon); font-weight: 600; font-size: 15px; margin: 12px 0 0; }
-    .backup { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+    .rush-note { color: var(--soon); font-weight: 600; font-size: 15px; margin: var(--s3) 0 0; }
+    .backup { margin-top: 18px; padding-top: var(--s4); border-top: 1px solid var(--line); }
     .panels > .backup { margin-top: 0; }
 
-    /* My trips: modes and total time along the bottom of each card */
-    .foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 14px; padding-top: 12px;
+    /* ============================================================ Card footer: modes and total time */
+    .foot { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); margin-top: 14px; padding-top: var(--s3);
       border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
-    .modes { display: flex; align-items: center; gap: 6px; color: var(--accent); }
-    .modes svg { padding: 5px; width: 26px; height: 26px; border-radius: var(--radius-xs); background: var(--accent-soft);
-      box-shadow: inset 0 0 0 1px rgba(15,118,110,.12); transition: transform .3s cubic-bezier(.2,.8,.2,1); }
+    .modes { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+    .modes svg { padding: 5px; width: 26px; height: 26px; border-radius: var(--radius-xs); background: var(--inset);
+      box-shadow: inset 0 0 0 1px var(--line); transition: transform .3s var(--ease), color var(--quick); }
     .modes .sep { color: var(--faint); }
+    /* Arrow at the bottom right: says "tap to open". Fills teal and nudges right on hover. */
+    .foot-end { display: inline-flex; align-items: center; gap: 10px; }
+    .go { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: var(--pill);
+      color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent-line);
+      transition: background var(--quick), color var(--quick), transform var(--quick) var(--ease); }
+    a.card:hover .go { background: var(--accent); color: var(--on-accent); transform: translateX(2px); }
     /* The bus and train roll forward a little when you hover a trip */
-    a.card:hover .modes svg { transform: translateX(3px); }
+    a.card:hover .modes svg { transform: translateX(3px); color: var(--accent); }
     a.card:hover .modes svg:last-child { transition-delay: .06s; }
 
-    /* Route: a line of stops. Time on the left, a dot on a connecting line, station on the right.
-       The line carries a soft light moving along it, like a train heading down the track. */
+    /* ============================================================ Route: a line of stops */
+    /* Time on the left, a dot on a connecting line, station on the right. A soft light moves down the line. */
     .stops { list-style: none; padding: 18px 0 0; margin: 18px 0 0; font-size: 15px; border-top: 1px solid var(--line); }
-    .chip-route .stops { border-top: 0; margin-top: 4px; padding-top: 8px; }
+    .chip-route .stops { border-top: 0; margin-top: var(--s1); padding-top: var(--s2); }
     .stops li { position: relative; display: grid; grid-template-columns: 44px 12px 1fr; column-gap: 14px; padding-bottom: 22px; }
     .stops li:last-child { padding-bottom: 0; }
     .stops li:not(:last-child)::before { content: ""; position: absolute; left: 62px; top: 17px; bottom: -5px; width: 4px;
-      border-radius: var(--radius-xs); background: linear-gradient(180deg, var(--ice) 0%, #0F766E 40%, var(--ice) 80%) 0 0 / 100% 200%;
+      border-radius: var(--pill); background: linear-gradient(180deg, var(--route-fade) 0%, var(--accent) 40%, var(--route-fade) 80%) 0 0 / 100% 200%;
       animation: flow 3s linear infinite; }
     @keyframes flow { to { background-position: 0 -200%; } }
     .stops .t { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 22px; }
-    .stops .dot { position: relative; width: 14px; height: 14px; margin: 4px 0 0 -1px; border-radius: 50%;
-      border: 3px solid #0F766E; background: var(--card-solid); z-index: 1; box-shadow: 0 0 0 3px var(--accent-soft); }
-    .stops li:first-child .dot, .stops li:last-child .dot { background: #0F766E; }
+    .stops .dot { position: relative; width: 14px; height: 14px; margin: var(--s1) 0 0 -1px; border-radius: 50%;
+      border: 3px solid var(--accent); background: var(--card); z-index: 1; box-shadow: 0 0 0 3px var(--accent-soft); }
+    .stops li:first-child .dot, .stops li:last-child .dot { background: var(--accent); }
     .stops p { margin: 0; line-height: 22px; }
     .stops .stop { font-weight: 600; }
     .stops .ride { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; line-height: 1.4; margin-top: 2px; }
-    .xfer { margin-top: 10px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--inset); font-size: 13px; line-height: 1.4;
+    .xfer { margin-top: 10px; padding: 10px var(--s3); border-radius: var(--radius-sm); background: var(--inset); font-size: 13px; line-height: 1.4;
       box-shadow: inset 0 0 0 1px var(--line); }
     .xfer p { margin: 0; line-height: 1.4; }
     .xfer .ride { margin: 0; }
     .xfer .ride:first-child { color: var(--text); font-weight: 600; }
-    .total { font-size: 14px; color: var(--muted); margin: 4px 0 0; }
+    .total { font-size: 14px; color: var(--muted); margin: var(--s1) 0 0; }
 
-    /* Other times today: one row each, tap to show its stops */
-    .chip { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0;
+    /* ============================================================ Other times: one row each, tap for stops */
+    .chip { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: var(--s3); padding: 14px 0;
       font: inherit; font-size: 16px; text-align: left; color: var(--text); background: none; border: 0;
       border-top: 1px solid var(--line); cursor: pointer; font-variant-numeric: tabular-nums; }
-    .chip b { font-family: var(--display); font-weight: 600; font-size: 18px; letter-spacing: -.02em;
-      transition: color .2s, transform .25s cubic-bezier(.2,.8,.2,1); }
+    .chip b { font-family: var(--display); font-weight: 600; font-size: 17px; letter-spacing: -.02em;
+      transition: color var(--quick), transform var(--quick) var(--ease); }
     .chip span { color: var(--muted); font-size: 14px; }
     .chip:hover b { transform: translateX(3px); }
     .chip:hover b, .chip[aria-expanded="true"] b { color: var(--accent); }
-    .chip-route { padding: 0 0 16px; }
+    .chip-route { padding: 0 0 var(--s4); }
     .show-all { display: block; width: 100%; min-height: 44px; font: inherit; font-size: 15px; font-weight: 600; color: var(--accent);
-      background: none; border: 0; border-top: 1px solid var(--line); padding: 10px 0 0; cursor: pointer; }
-    .panels .panel:has(.chips) { padding-bottom: 8px; }
-    .panels details.panel:not([open]) { padding-bottom: 20px; }
+      background: none; border: 0; border-top: 1px solid var(--line); padding: 10px 0 0; cursor: pointer; transition: color var(--quick); }
+    .show-all:hover { color: var(--accent-hover); }
+    .panels .panel:has(.chips) { padding-bottom: var(--s2); }
+    .panels details.panel:not([open]) { padding-bottom: var(--s5); }
 
-    /* One-line options, tap to expand */
-    details.line { background: var(--card); border-radius: var(--radius-sm); box-shadow: var(--shadow);
-      -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); padding: 0 16px; margin-bottom: 10px; font-size: 16px; }
-    details.line summary { display: flex; justify-content: space-between; gap: 12px; padding: 14px 0;
+    /* ============================================================ One-line options, tap to expand */
+    details.line { background: var(--card); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm);
+      padding: 0 var(--s4); margin-bottom: 10px; font-size: 16px; transition: box-shadow var(--quick) var(--ease), transform var(--quick) var(--ease); }
+    details.line:hover { box-shadow: var(--shadow); }
+    details.line summary { display: flex; justify-content: space-between; gap: var(--s3); padding: 14px 0;
       cursor: pointer; list-style: none; font-variant-numeric: tabular-nums; }
     details.line summary::-webkit-details-marker { display: none; }
     details.line summary b { font-weight: 600; }
     details.line summary span { color: var(--muted); }
     details.line .stops { margin-top: 0; }
-    details.line[open] { padding-bottom: 16px; }
+    details.line[open] { padding-bottom: var(--s4); }
     details summary { cursor: pointer; }
     .card details > summary, .rush details > summary { color: var(--accent); font-size: 15px; font-weight: 500; margin-top: 14px; }
 
-    /* Arrive-by, deliberately small */
-    details.arrive { font-size: 15px; margin: 8px 0 0; text-align: center; }
+    /* ============================================================ Arrive-by, deliberately small */
+    details.arrive { font-size: 15px; margin: var(--s2) 0 0; text-align: center; }
     details.arrive > summary { display: inline-block; color: var(--accent); font-weight: 500; font-size: 15px; padding: 10px; }
     details.arrive[open] { text-align: left; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
-      -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); padding: 8px 20px 16px; }
+      padding: var(--s2) var(--s5) var(--s4); }
     details.arrive[open] > summary { padding-left: 0; }
-    details.arrive form { margin: 8px 0 12px; }
-    details.arrive p { margin-top: 8px; }
+    details.arrive form { margin: var(--s2) 0 var(--s3); }
+    details.arrive p { margin-top: var(--s2); }
 
-    /* Buttons: glossy blue, lit from the top, lifting on hover */
-    .btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0;
-      border-radius: var(--radius-sm); padding: 13px 22px; font: inherit; font-weight: 600; color: var(--on-accent); text-decoration: none; cursor: pointer;
-      background: linear-gradient(180deg, var(--btn-top), var(--btn-bottom));
-      box-shadow: 0 1px 2px rgba(15,118,110,.3), 0 10px 24px -8px rgba(15,118,110,.55);
-      transition: transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s, filter .2s; }
-    .btn:hover { color: var(--on-accent); transform: translateY(-2px); filter: brightness(1.05);
-      box-shadow: 0 2px 4px rgba(15,118,110,.3), 0 16px 32px -10px rgba(15,118,110,.6); }
+    /* ============================================================ Buttons */
+    /* Teal pills with a small arrow that slides right on hover */
+    .btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); border: 0;
+      border-radius: var(--pill); padding: 12px 22px; font: inherit; font-weight: 600; letter-spacing: -.005em; color: var(--on-accent);
+      text-decoration: none; cursor: pointer; background: var(--accent); box-shadow: var(--shadow-btn);
+      transition: transform var(--quick) var(--ease), box-shadow var(--quick) var(--ease), background var(--quick); }
+    .btn:hover { color: var(--on-accent); transform: translateY(-1px); box-shadow: var(--shadow-btn-hover); }
     .btn:active { transform: translateY(0); }
-    .btn svg { transition: transform .3s cubic-bezier(.2,.8,.2,1); }
+    .btn::after { content: ""; flex: none; width: 10px; height: 10px; margin-left: -2px; background: currentColor;
+      -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M3 1.5 6.5 5 3 8.5' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M3 1.5 6.5 5 3 8.5' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+      transition: transform var(--quick) var(--ease); }
+    .btn:hover::after { transform: translateX(3px); }
+    /* No arrow on Delete, or on Plan a Trip, which already has its plus */
+    .btn.danger::after, .btn.cta::after { display: none; }
+    .btn svg { transition: transform .3s var(--ease); }
     .btn:hover svg { transform: rotate(90deg); }
-    .btn.small { padding: 8px 16px; font-size: 15px; }
-    .btn.wide { display: flex; width: 100%; margin-top: 24px; }
-    .btn.cta { min-height: 54px; font-size: 16px; margin-top: 12px; }
-    .btn.secondary, .btn.danger { background: var(--card); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
-      box-shadow: var(--shadow); color: var(--text); }
+    .btn.small { padding: var(--s2) var(--s4); font-size: 15px; }
+    .btn.wide { display: flex; width: 100%; margin-top: var(--s6); }
+    .btn.cta { min-height: 50px; font-size: 16px; margin-top: var(--s3); }
+    .btn.secondary, .btn.danger { background: var(--card); box-shadow: var(--shadow-sm); color: var(--text); }
     .btn.secondary:hover { color: var(--text); box-shadow: var(--shadow-hover); }
     .btn.danger { color: var(--danger); }
     .btn.danger:hover { color: var(--danger); box-shadow: var(--shadow-hover); }
-    .saved { color: var(--accent); background: var(--accent-soft); font-weight: 600; font-size: 15px;
-      padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 16px; }
-    .note { font-size: 15px; color: var(--muted); margin: -12px 0 20px; }
-    .summary { font-size: 15px; color: var(--muted); margin: -16px 0 20px; }
-    .choice { display: flex; align-items: center; gap: 10px; font-weight: 400; margin: 8px 0; }
-    .choice input[type=radio] { width: auto; margin: 0; accent-color: #0F766E; }
-    .choice input[type=time], .choice input[type=date] { width: auto; padding: 6px 8px; }
-    fieldset { border: 0; padding: 0; margin: 20px 0 0; }
-    legend { font-weight: 600; font-size: 15px; margin: 0; padding: 0 0 6px; }
-    form.inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    /* ============================================================ Messages */
+    .saved { color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent-line); font-weight: 600; font-size: 15px;
+      padding: var(--s3) var(--s4); border-radius: var(--radius-sm); margin-bottom: var(--s4); }
+    .note { font-size: 15px; color: var(--muted); margin: -12px 0 var(--s5); }
+    .summary { font-size: 15px; color: var(--muted); margin: -16px 0 var(--s5); }
+    .error { color: var(--danger); background: var(--soon-soft); box-shadow: inset 0 0 0 1px var(--soon-line); font-weight: 600;
+      padding: var(--s3) var(--s4); border-radius: var(--radius-sm); margin-bottom: var(--s4); }
+
+    /* ============================================================ Forms */
+    .choice { display: flex; align-items: center; gap: 10px; font-weight: 400; margin: var(--s2) 0; }
+    .choice input[type=radio] { width: auto; margin: 0; accent-color: var(--accent); }
+    .choice input[type=time], .choice input[type=date] { width: auto; padding: 6px var(--s2); }
+    fieldset { border: 0; padding: 0; margin: var(--s5) 0 0; }
+    legend { font-weight: 600; font-size: 15px; margin: 0; padding: 0 0 6px; color: var(--text); }
+    form.inline { display: flex; gap: var(--s2); align-items: center; flex-wrap: wrap; }
     form.inline label { margin: 0; }
     form.card label:first-child { margin-top: 0; }
-    label { display: block; font-weight: 600; font-size: 15px; margin: 18px 0 8px; }
+    label { display: block; font-weight: 600; font-size: 15px; margin: 18px 0 var(--s2); color: var(--text); }
     input, select { font: inherit; width: 100%; padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--field-line);
-      background: var(--field); color: var(--text); box-shadow: inset 0 1px 2px rgba(17,24,39,.06); transition: border-color .2s, box-shadow .2s; }
-    input:focus, select:focus { outline: 0; border-color: #0F766E; box-shadow: 0 0 0 4px rgba(15,118,110,.18); }
-    form.inline input { width: auto; padding: 6px 8px; }
-    .error { color: var(--danger); background: var(--soon-soft); font-weight: 600; padding: 12px 16px;
-      border-radius: var(--radius-sm); margin-bottom: 16px; }
-    .actions { display: flex; gap: 8px; margin-top: 24px; flex-wrap: wrap; }
+      background: var(--field); color: var(--text); box-shadow: 0 1px 2px rgba(10,37,64,.04);
+      transition: border-color var(--quick), box-shadow var(--quick); }
+    input:hover, select:hover { border-color: var(--field-hover); }
+    input:focus, select:focus { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-ring), 0 4px 14px -4px var(--accent-glow); }
+    input::placeholder { color: var(--placeholder); }
+    form.inline input { width: auto; padding: 6px var(--s2); }
+    .actions { display: flex; gap: var(--s2); margin-top: var(--s6); flex-wrap: wrap; }
 
     /* Anyone who asks their device for less motion gets a still page */
     @media (prefers-reduced-motion: reduce) {
@@ -331,7 +419,7 @@
   <script>
     // Keep countdowns current. Reload when the answer should change:
     // the main option drops under {{ RUSH }} min (show a backup), or a "may not make it" option leaves.
-    const SOON = {{ SOON }} * 60000, RUSH = {{ RUSH }} * 60000;
+    const SOON = {{ SOON }} * 60000, LATE = {{ LATE }} * 60000, RUSH = {{ RUSH }} * 60000;
     // Use the server's clock, so a phone whose clock is off agrees with what the server showed
     const offset = {{ server_ms() }} - Date.now();
     let reloading = false;
@@ -351,7 +439,8 @@
         if (el.hasAttribute("data-watch") && crossed(el, RUSH)) return reload();
         if (el.hasAttribute("data-refresh") && crossed(el, 0)) return reload();
         el.textContent = el.dataset.what + " " + (left < 0 ? "left" : words(left));
-        el.classList.toggle("soon", left >= 0 && left <= SOON);
+        el.classList.toggle("late", left < LATE);
+        el.classList.toggle("soon", left >= LATE && left <= SOON);
       });
       document.querySelectorAll("[data-rush]").forEach(el => {
         const left = Number(el.dataset.t) - now;
