@@ -11,6 +11,7 @@
 {% for c in cards %}
   {% set t, v, r = c.trip, c.view, c.view.main %}
   <a class="card trip-card {{ 'big' if c.big else 'compact' }}" href="{{ url_for('show_trip', name=t.name, **keep_at) }}">
+    {% if c.big %}<span class="up-next">Up next</span>{% endif %}
     <div class="top">
       <span class="label">{{ t.name }}</span>
       {% if r %}{{ pill(r, watch=c.big and not v.rush, refresh=not c.big) }}{% endif %}
