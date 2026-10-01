@@ -31,7 +31,8 @@
       /* Hero wash behind the top of each page: blue, teal and a touch of purple */
       --wash-1: rgba(94,234,212,.30); --wash-2: rgba(125,180,255,.30); --wash-3: rgba(167,139,250,.22);
       /* Map background (My Trips) */
-      --map-lake: #E2F0F3; --map-hill: #ECEFF3; --map-label: #8898AA; --map-opacity: .5;
+      --map-lake: #D7EBF2; --map-shore: #A9CFDD; --map-hill: #E3E7EC; --map-road: #D3D9E1; --map-label: #8898AA;
+      --map-water-label: #6E9CB0; --map-opacity: .6;
 
       /* Type */
       --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -72,7 +73,8 @@
         --soon: #FF8A7A; --soon-soft: rgba(255,120,100,.14); --soon-line: rgba(255,120,100,.24);
         --danger: #F97066;
         --wash-1: rgba(45,212,191,.12); --wash-2: rgba(80,140,255,.14); --wash-3: rgba(140,110,250,.12);
-        --map-lake: rgba(45,212,191,.07); --map-hill: rgba(255,255,255,.035); --map-label: #6B7F95;
+        --map-lake: rgba(80,170,210,.12); --map-shore: rgba(120,190,220,.3); --map-hill: rgba(255,255,255,.06);
+        --map-road: rgba(170,195,225,.14); --map-label: #6B7F95; --map-water-label: #5E8FA6;
         --shadow-sm: 0 0 0 1px var(--border), 0 2px 6px -2px rgba(0,0,0,.5);
         --shadow: 0 0 0 1px var(--border), 0 12px 28px -12px rgba(0,0,0,.6);
         --shadow-hover: 0 0 0 1px rgba(170,195,225,.18), 0 18px 40px -12px rgba(0,0,0,.7);
@@ -137,20 +139,34 @@
     /* ============================================================ Map background (My Trips) */
     /* A rail-map style diagram fixed behind the page, under the trip cards, faded so the cards lead */
     .map-bg { position: fixed; inset: 56px 0 0; z-index: -2; pointer-events: none; opacity: var(--map-opacity); }
-    .map-bg svg { display: block; width: 100%; height: 100%; overflow: visible; }
-    .map-bg .lake { fill: var(--map-lake); }
+    .map-bg svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: visible; }
+    /* Land: shaded mountains, lakes, a river, faint freeways */
     .map-bg .hill { fill: var(--map-hill); }
-    .map-bg .area { font-size: 4.2px; font-weight: 700; letter-spacing: .25em; fill: var(--map-label); text-anchor: middle; }
-    .map-bg .line { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; opacity: .4; }
-    .map-bg .line.next { stroke-width: 3; opacity: .9; }
-    .map-bg .stn { fill: var(--card); stroke: var(--map-label); stroke-width: .9; }
-    .map-bg .name { font-size: 4.2px; font-weight: 600; fill: var(--muted); }
-    .map-bg .veh > circle { fill: var(--card); stroke: var(--accent); stroke-width: .7; }
+    .map-bg .valley { fill: var(--bg); opacity: .45; }
+    .map-bg .lake { fill: var(--map-lake); stroke: var(--map-shore); stroke-width: .12; }
+    .map-bg .peak { fill: var(--map-label); opacity: .7; }
+    .map-bg .spot { fill: none; stroke: var(--map-label); stroke-width: .14; }
+    .map-bg .river { fill: none; stroke: var(--map-shore); stroke-width: .22; stroke-linecap: round; }
+    .map-bg .road { fill: none; stroke: var(--map-road); stroke-width: .32; stroke-linecap: round; stroke-linejoin: round; }
+    /* Names: lakes and ranges spaced out, towns small caps, stations plain */
+    .map-bg .area { font-size: .95px; font-weight: 700; letter-spacing: .3em; fill: var(--map-label); text-anchor: middle; }
+    .map-bg .water-name { fill: var(--map-water-label); font-style: italic; letter-spacing: .25em; }
+    .map-bg .mark { font-size: .55px; font-weight: 500; font-style: italic; fill: var(--map-label); text-anchor: middle; }
+    .map-bg .water-mark { fill: var(--map-water-label); }
+    .map-bg .town { font-size: .62px; font-weight: 600; letter-spacing: .14em; fill: var(--map-label); text-anchor: middle; }
+    .map-bg .name { font-size: .78px; font-weight: 600; fill: var(--muted); paint-order: stroke; stroke: var(--bg); stroke-width: .22px; }
+    /* Routes and stops */
+    .map-bg .line { fill: none; stroke: var(--accent); stroke-width: .42; stroke-linecap: round; stroke-linejoin: round; opacity: .5; }
+    .map-bg .line.bus { stroke-width: .3; }
+    .map-bg .line.next { stroke-width: .62; opacity: .95; }
+    .map-bg .stn { fill: var(--card); stroke: var(--text); stroke-width: .16; }
+    .map-bg .stop { fill: var(--card); stroke: var(--accent); stroke-width: .12; }
+    .map-bg .veh > circle { fill: var(--card); stroke: var(--accent); stroke-width: .13; }
     .map-bg .veh g { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
     /* Labels and icons that would peek out around a card fade away (the map script sets .tucked) */
-    .map-bg .area, .map-bg .name, .map-bg .veh { transition: opacity .3s ease; }
+    .map-bg text, .map-bg .veh { transition: opacity .3s ease; }
     .map-bg .tucked { opacity: 0; }
-    @media (max-width: 599px) { .map-bg .area { display: none; } }
+    @media (max-width: 599px) { .map-bg .area, .map-bg .town, .map-bg .mark { display: none; } }
 
     /* ============================================================ Cards */
     .card, .panels .panel, .panels > .rush, .panels > .backup {
